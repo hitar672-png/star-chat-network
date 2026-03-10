@@ -39,7 +39,7 @@ const ChatRoom = () => {
     const fetchMessages = async () => {
       const { data } = await supabase
         .from("messages")
-        .select("*, profiles!messages_user_id_fkey(*)")
+        .select("*, profiles!inner(*)")
         .eq("room_id", roomId)
         .order("created_at", { ascending: true })
         .limit(100);
