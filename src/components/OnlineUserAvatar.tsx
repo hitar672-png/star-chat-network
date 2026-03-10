@@ -1,12 +1,18 @@
-import { OnlineUser } from "@/data/mockData";
-
-interface Props {
-  user: OnlineUser;
+interface UserData {
+  id: string;
+  username: string;
+  level: number;
+  borderColor: string;
 }
 
-const OnlineUserAvatar = ({ user }: Props) => {
+interface Props {
+  user: UserData;
+  onClick?: () => void;
+}
+
+const OnlineUserAvatar = ({ user, onClick }: Props) => {
   return (
-    <div className="flex flex-col items-center gap-1">
+    <button onClick={onClick} className="flex flex-col items-center gap-1">
       <div className={`relative w-14 h-14 rounded-full bg-muted border-2 ${user.borderColor} flex items-center justify-center`}>
         <span className="text-xl">👤</span>
         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
@@ -18,7 +24,7 @@ const OnlineUserAvatar = ({ user }: Props) => {
       <span className="text-[10px] font-cairo text-muted-foreground truncate w-14 text-center">
         {user.username}
       </span>
-    </div>
+    </button>
   );
 };
 

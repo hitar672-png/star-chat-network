@@ -1,6 +1,8 @@
-import { X, Eye, CreditCard, Heart, Volume2, Shield, Trash2, FileText, Users } from "lucide-react";
+import { X, Eye, CreditCard, Heart, Volume2, Shield, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const profileMenuItems = [
   { icon: CreditCard, label: "تحرير البيانات" },
@@ -9,18 +11,24 @@ const profileMenuItems = [
 ];
 
 const settingsTabs = [
-  { label: "حساب", active: true },
-  { label: "هدايا", active: false },
-  { label: "مزيد", active: false },
+  { label: "حساب" },
+  { label: "هدايا" },
+  { label: "مزيد" },
 ];
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { profile, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState("حساب");
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("تم تسجيل الخروج");
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header with gradient */}
       <div className="relative bg-secondary h-56">
         <div className="absolute top-4 right-4 flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-secondary-foreground">
@@ -30,8 +38,6 @@ const Profile = () => {
             <Eye className="w-6 h-6" />
           </button>
         </div>
-
-        {/* Avatar */}
         <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
           <div className="w-24 h-24 rounded-full bg-muted border-4 border-primary flex items-center justify-center">
             <span className="text-4xl">👤</span>
@@ -39,16 +45,18 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* User info */}
       <div className="pt-16 text-center px-6">
-        <p className="text-xs font-cairo text-muted-foreground">🔒 زائر</p>
-        <h2 className="text-xl font-cairo font-bold text-foreground mt-1">مستخدم جديد</h2>
+        <p className="text-xs font-cairo text-muted-foreground">
+          {profile?.gender === "male" ? "♂ ذكر" : profile?.gender === "female" ? "♀ أنثى" : ""}
+          {profile?.age ? ` • ${profile.age} سنة` : ""}
+        </p>
+        <h2 className="text-xl font-cairo font-bold text-foreground mt-1">
+          {profile?.username || "مستخدم جديد"}
+        </h2>
+        <span className="text-xs font-space font-bold bg-accent/20 text-accent px-3 py-1 rounded-full inline-block mt-2">
+          مستوى {profile?.level || 1}
+        </span>
       </div>
-
-      {/* Subscribe banner */}
-      <button className="w-full bg-accent text-accent-foreground text-sm font-cairo font-bold py-3 mt-4 hover:bg-accent/90 transition-colors">
-        ⚠️ أكمل الاشتراك بالضغط هنا
-      </button>
 
       {/* Tabs */}
       <div className="flex items-center justify-center gap-3 py-4">
@@ -67,7 +75,6 @@ const Profile = () => {
         ))}
       </div>
 
-      {/* Menu items */}
       <div className="px-6 space-y-0">
         {profileMenuItems.map((item) => (
           <button
@@ -90,9 +97,17 @@ const Profile = () => {
           <span className="text-xs font-space text-muted-foreground tracking-widest">• • • • • • • •</span>
           <Eye className="w-4 h-4 text-muted-foreground" />
         </div>
-        <p className="text-[11px] font-cairo text-muted-foreground leading-relaxed">
-          عند فقدان الحساب، قم بإنشاء حساب جديد مؤقتاً ثم تواصل مع إدارة التطبيق وأعطهم رمز هوية الحساب ليتم استرجاع حسابك فوراً
-        </p>
+      </div>
+
+      {/* Sign out */}
+      <div className="px-6 mt-6 mb-8">
+        <button
+          onClick={handleSignOut}
+          className="w-full flex items-center justify-center gap-2 bg-destructive text-destructive-foreground font-cairo font-bold py-3 rounded-xl hover:bg-destructive/90 transition-all"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>تسجيل الخروج</span>
+        </button>
       </div>
     </div>
   );
