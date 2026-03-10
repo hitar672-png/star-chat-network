@@ -56,7 +56,7 @@ const ChatRoom = () => {
         async (payload) => {
           const { data } = await supabase
             .from("messages")
-            .select("*, profiles!messages_user_id_fkey(*)")
+            .select("*, profiles!inner(*)")
             .eq("id", payload.new.id)
             .single();
           if (data) {
