@@ -1,14 +1,89 @@
 import { useState, useRef, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import TopToolbar from "@/components/TopToolbar";
 import BottomNav from "@/components/BottomNav";
 import ChatMessage from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
 import WelcomeBanner from "@/components/WelcomeBanner";
-import { mockMessages, ChatMessage as ChatMessageType } from "@/data/mockData";
+import UserProfileModal from "@/components/UserProfileModal";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Tables } from "@/integrations/supabase/types";
+
+interface MessageWithProfile {
+  id: string;
+  text: string;
+  created_at: string;
+  user_id: string;
+  room_id: string;
+  profile?: Tables<"profiles"> | null;
+}
 
 const ChatRoom = () => {
-  const [messages, setMessages] = useState<ChatMessageType[]>(mockMessages);
+  const { roomId } = useParams<{ roomId: string }>();
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<MessageWithProfile[]>([]);
+  const [roomName, setRoomName] = useState("الغرفة العامة");
+  const [selectedUser, setSelectedUser] = useState<Tables<"profiles"> | null>(null);
+  const [profilesCache, setProfilesCache] = useState<Record<string, Tables<"profiles">>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const fetchProfile = async (userId: string): Promise<Tables<"profiles"> | null> => {
+    if (profilesCache[userId]) return profilesCache[userId];
+    const { data } = await supabase.from("profiles").select("*").eq("user_id", userId).single();
+    if (data) {
+      setProfilesCache((prev) => ({ ...prev, [userId]: data }));
+    }
+    return data;
+  };
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    supabase.from("rooms").select("name").eq("id", roomId).single().then(({ data }) => {
+      if (data) setRoomName(data.name);
+    });
+
+    const fetchMessages = async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("room_id", roomId)
+        .order("created_at", { ascending: true })
+        .limit(100);
+      
+      if (!data) return;
+
+      // Fetch profiles for all unique user_ids
+      const userIds = [...new Set(data.map((m) => m.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("user_id", userIds);
+
+      const profileMap: Record<string, Tables<"profiles">> = {};
+      profiles?.forEach((p) => { profileMap[p.user_id] = p; });
+      setProfilesCache((prev) => ({ ...prev, ...profileMap }));
+
+      setMessages(data.map((m) => ({ ...m, profile: profileMap[m.user_id] || null })));
+    };
+    fetchMessages();
+
+    const channel = supabase
+      .channel(`room-${roomId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages", filter: `room_id=eq.${roomId}` },
+        async (payload) => {
+          const msg = payload.new as Tables<"messages">;
+          const profile = await fetchProfile(msg.user_id);
+          setMessages((prev) => [...prev, { ...msg, profile }]);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [roomId]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -16,37 +91,56 @@ const ChatRoom = () => {
     }
   }, [messages]);
 
-  const handleSend = (text: string) => {
-    const newMsg: ChatMessageType = {
-      id: Date.now().toString(),
-      username: "أنت",
+  const handleSend = async (text: string) => {
+    if (!user || !roomId) return;
+    await supabase.from("messages").insert({
+      room_id: roomId,
+      user_id: user.id,
       text,
-      time: new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }),
-      isOwn: true,
-      level: 7,
-    };
-    setMessages((prev) => [...prev, newMsg]);
+    });
+  };
+
+  const handleAvatarClick = (profile: Tables<"profiles"> | null | undefined) => {
+    if (profile && profile.user_id !== user?.id) {
+      setSelectedUser(profile);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <TopToolbar />
+      <TopToolbar roomName={roomName} />
 
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto scrollbar-hide pb-36"
-      >
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide pb-36">
         <WelcomeBanner />
-
         <div className="mt-2">
           {messages.map((msg) => (
-            <ChatMessage key={msg.id} message={msg} />
+            <ChatMessage
+              key={msg.id}
+              message={{
+                id: msg.id,
+                username: msg.profile?.username || "مجهول",
+                text: msg.text,
+                time: new Date(msg.created_at).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }),
+                isOwn: msg.user_id === user?.id,
+                level: msg.profile?.level || 1,
+                country: msg.profile?.country || undefined,
+                gender: msg.profile?.gender || undefined,
+              }}
+              onAvatarClick={() => handleAvatarClick(msg.profile)}
+            />
           ))}
         </div>
       </div>
 
       <ChatInput onSend={handleSend} />
       <BottomNav />
+
+      {selectedUser && (
+        <UserProfileModal
+          profile={selectedUser}
+          onClose={() => setSelectedUser(null)}
+        />
+      )}
     </div>
   );
 };

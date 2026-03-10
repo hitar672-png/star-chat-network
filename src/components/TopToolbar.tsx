@@ -2,9 +2,13 @@ import { Menu, Heart, Mail, Bell, Paintbrush, Volume2, UserCheck } from "lucide-
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
+interface Props {
+  roomName?: string;
+}
+
 const toolbarItems = [
   { icon: Menu, label: "قائمة", path: "/menu" },
-  { icon: Heart, label: "دردش", path: "/chat", notification: false },
+  { icon: Heart, label: "دردش", path: "/rooms" },
   { icon: Mail, label: "خاص", path: "/private", notification: true },
   { icon: Bell, label: "إشعار", path: "/notifications" },
   { icon: Paintbrush, label: "الخط", path: "/font" },
@@ -12,12 +16,17 @@ const toolbarItems = [
   { icon: UserCheck, label: "", path: "/profile", isAvatar: true },
 ];
 
-const TopToolbar = () => {
+const TopToolbar = ({ roomName }: Props) => {
   const navigate = useNavigate();
   const [notifCount] = useState(1);
 
   return (
     <div className="sticky top-0 z-50 bg-toolbar">
+      {roomName && (
+        <div className="text-center py-1 border-b border-secondary/30">
+          <span className="text-xs font-cairo font-bold text-secondary-foreground">{roomName}</span>
+        </div>
+      )}
       <div className="flex items-center justify-between px-2 py-2">
         {toolbarItems.map((item) => (
           <button
