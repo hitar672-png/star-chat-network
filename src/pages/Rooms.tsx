@@ -1,8 +1,8 @@
-import { X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import RoomCard from "@/components/RoomCard";
+import TopToolbar from "@/components/TopToolbar";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 
@@ -23,13 +23,7 @@ const Rooms = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-16">
-      <div className="sticky top-0 z-50 bg-toolbar px-4 py-3 flex items-center justify-between">
-        <button onClick={() => navigate(-1)} className="text-secondary-foreground">
-          <X className="w-6 h-6" />
-        </button>
-        <h1 className="text-lg font-cairo font-bold text-secondary-foreground">الدخول إلى الغرف</h1>
-        <div className="w-6" />
-      </div>
+      <TopToolbar />
 
       <div className="flex-1 px-4 py-4 space-y-3">
         {rooms.map((room, i) => (
