@@ -16,6 +16,12 @@ import OnlineUsers from "./pages/OnlineUsers";
 import SoundSettings from "./pages/SoundSettings";
 import PrivateMessages from "./pages/PrivateMessages";
 import PrivateChat from "./pages/PrivateChat";
+import Notifications from "./pages/Notifications";
+import FontSettings from "./pages/FontSettings";
+import SearchUsers from "./pages/SearchUsers";
+import Likes from "./pages/Likes";
+import Levels from "./pages/Levels";
+import Gifts from "./pages/Gifts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,14 +46,12 @@ const App = () => (
             <Route path="/sound" element={<SoundSettings />} />
             <Route path="/private" element={<PrivateMessages />} />
             <Route path="/private/:userId" element={<PrivateChat />} />
-            <Route path="/notifications" element={<Rooms />} />
-            <Route path="/font" element={<Rooms />} />
-            <Route path="/search" element={<Rooms />} />
-            <Route path="/likes" element={<Rooms />} />
-            <Route path="/levels" element={<Rooms />} />
-            <Route path="/gifts" element={<Rooms />} />
-            <Route path="/refresh" element={<Rooms />} />
-            <Route path="/theme" element={<Rooms />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/font" element={<FontSettings />} />
+            <Route path="/search" element={<SearchUsers />} />
+            <Route path="/likes" element={<Likes />} />
+            <Route path="/levels" element={<Levels />} />
+            <Route path="/gifts" element={<Gifts />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
