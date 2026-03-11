@@ -1,23 +1,78 @@
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Cloud, Send, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
 
 const Landing = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    if (!loading && user) {
+    const timer = setTimeout(() => setShowSplash(false), 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!loading && user && !showSplash) {
       navigate("/rooms");
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, showSplash]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <AnimatePresence>
+        {showSplash && (
+          <motion.div
+            key="splash"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6 }}
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center"
+            style={{
+              backgroundImage: "url('/splash.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <motion.img
+              src="/favicon.png"
+              alt="شات عالمي"
+              className="w-24 h-24 mb-6 rounded-2xl"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            />
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="text-3xl font-cairo font-bold text-white mb-2"
+            >
+              شات عالمي
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+              className="text-sm font-cairo text-white/70"
+            >
+              أكبر دردشة تفاعلية في الوطن العربي
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex-1 flex flex-col items-center justify-center px-6 pt-16 pb-8">
-        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-7xl mb-6">🌍</motion.div>
+        <motion.img
+          src="/favicon.png"
+          alt="شات عالمي"
+          className="w-20 h-20 mb-6 rounded-2xl"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+        />
         <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-3xl font-cairo font-bold text-foreground mb-2">شات عالمي</motion.h1>
         <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-sm font-cairo text-muted-foreground text-center max-w-xs">أكبر دردشة تفاعلية في الوطن العربي</motion.p>
       </div>
@@ -33,7 +88,7 @@ const Landing = () => {
           <Send className="w-6 h-6" />
         </motion.button>
 
-        <motion.button initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }} onClick={() => { navigate("/auth"); }} className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-cairo font-bold text-lg py-4 rounded-xl hover:bg-primary/90 transition-all">
+        <motion.button initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }} onClick={() => navigate("/auth")} className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-cairo font-bold text-lg py-4 rounded-xl hover:bg-primary/90 transition-all">
           <span>إنشاء حساب جديد</span>
           <UserPlus className="w-6 h-6" />
         </motion.button>
