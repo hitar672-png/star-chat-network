@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import TopToolbar from "@/components/TopToolbar";
 import BottomNav from "@/components/BottomNav";
@@ -25,22 +25,22 @@ const ChatRoom = () => {
   const [messages, setMessages] = useState<MessageWithProfile[]>([]);
   const [roomName, setRoomName] = useState("الغرفة العامة");
   const [selectedUser, setSelectedUser] = useState<Tables<"profiles"> | null>(null);
-  const [profilesCache, setProfilesCache] = useState<Record<string, Tables<"profiles">>>({});
+  const profilesCacheRef = useRef<Record<string, Tables<"profiles">>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const fetchProfile = async (userId: string): Promise<Tables<"profiles"> | null> => {
-    if (profilesCache[userId]) return profilesCache[userId];
-    const { data } = await supabase.from("profiles").select("*").eq("user_id", userId).single();
+  const fetchProfile = useCallback(async (userId: string): Promise<Tables<"profiles"> | null> => {
+    if (profilesCacheRef.current[userId]) return profilesCacheRef.current[userId];
+    const { data } = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
     if (data) {
-      setProfilesCache((prev) => ({ ...prev, [userId]: data }));
+      profilesCacheRef.current[userId] = data;
     }
     return data;
-  };
+  }, []);
 
   useEffect(() => {
     if (!roomId) return;
 
-    supabase.from("rooms").select("name").eq("id", roomId).single().then(({ data }) => {
+    supabase.from("rooms").select("name").eq("id", roomId).maybeSingle().then(({ data }) => {
       if (data) setRoomName(data.name);
     });
 
@@ -54,7 +54,6 @@ const ChatRoom = () => {
       
       if (!data) return;
 
-      // Fetch profiles for all unique user_ids
       const userIds = [...new Set(data.map((m) => m.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -63,7 +62,7 @@ const ChatRoom = () => {
 
       const profileMap: Record<string, Tables<"profiles">> = {};
       profiles?.forEach((p) => { profileMap[p.user_id] = p; });
-      setProfilesCache((prev) => ({ ...prev, ...profileMap }));
+      profilesCacheRef.current = { ...profilesCacheRef.current, ...profileMap };
 
       setMessages(data.map((m) => ({ ...m, profile: profileMap[m.user_id] || null })));
     };
@@ -83,7 +82,7 @@ const ChatRoom = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [roomId]);
+  }, [roomId, fetchProfile]);
 
   useEffect(() => {
     if (scrollRef.current) {

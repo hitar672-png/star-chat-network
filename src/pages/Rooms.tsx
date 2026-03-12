@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import RoomCard from "@/components/RoomCard";
@@ -30,17 +30,17 @@ const Rooms = () => {
   const [rooms, setRooms] = useState<Tables<"rooms">[]>([]);
   const [messages, setMessages] = useState<MessageWithProfile[]>([]);
   const [selectedUser, setSelectedUser] = useState<Tables<"profiles"> | null>(null);
-  const [profilesCache, setProfilesCache] = useState<Record<string, Tables<"profiles">>>({});
+  const profilesCacheRef = useRef<Record<string, Tables<"profiles">>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const fetchProfile = async (userId: string): Promise<Tables<"profiles"> | null> => {
-    if (profilesCache[userId]) return profilesCache[userId];
-    const { data } = await supabase.from("profiles").select("*").eq("user_id", userId).single();
+  const fetchProfile = useCallback(async (userId: string): Promise<Tables<"profiles"> | null> => {
+    if (profilesCacheRef.current[userId]) return profilesCacheRef.current[userId];
+    const { data } = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
     if (data) {
-      setProfilesCache((prev) => ({ ...prev, [userId]: data }));
+      profilesCacheRef.current[userId] = data;
     }
     return data;
-  };
+  }, []);
 
   useEffect(() => {
     const fetchRooms = async () => {
@@ -75,7 +75,7 @@ const Rooms = () => {
 
       const profileMap: Record<string, Tables<"profiles">> = {};
       profiles?.forEach((p) => { profileMap[p.user_id] = p; });
-      setProfilesCache((prev) => ({ ...prev, ...profileMap }));
+      profilesCacheRef.current = { ...profilesCacheRef.current, ...profileMap };
       setMessages(data.map((m) => ({ ...m, profile: profileMap[m.user_id] || null })));
     };
     fetchMessages();
@@ -94,7 +94,7 @@ const Rooms = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [activeTab]);
+  }, [activeTab, fetchProfile]);
 
   useEffect(() => {
     if (scrollRef.current) {
