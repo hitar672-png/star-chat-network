@@ -1,13 +1,13 @@
-import { X, Eye, CreditCard, Heart, Volume2, Shield, LogOut } from "lucide-react";
+import { X, Eye, CreditCard, Heart, Volume2, Shield, LogOut, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const profileMenuItems = [
-  { icon: CreditCard, label: "تحرير البيانات" },
-  { icon: Heart, label: "تعديل الحالة" },
-  { icon: Volume2, label: "إعدادات الصوت" },
+  { icon: Edit, label: "تحرير البيانات", route: "/edit-profile" },
+  { icon: Heart, label: "تعديل الحالة", route: "" },
+  { icon: Volume2, label: "إعدادات الصوت", route: "/sound" },
 ];
 
 const settingsTabs = [
@@ -39,8 +39,12 @@ const Profile = () => {
           </button>
         </div>
         <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <div className="w-24 h-24 rounded-full bg-muted border-4 border-primary flex items-center justify-center">
-            <span className="text-4xl">👤</span>
+          <div className="w-24 h-24 rounded-full bg-muted border-4 border-primary flex items-center justify-center overflow-hidden">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-4xl">👤</span>
+            )}
           </div>
         </div>
       </div>
@@ -50,7 +54,10 @@ const Profile = () => {
           {profile?.gender === "male" ? "♂ ذكر" : profile?.gender === "female" ? "♀ أنثى" : ""}
           {profile?.age ? ` • ${profile.age} سنة` : ""}
         </p>
-        <h2 className="text-xl font-cairo font-bold text-foreground mt-1">
+        <h2
+          className="text-xl font-cairo font-bold mt-1"
+          style={{ color: (profile as any)?.name_color || "hsl(var(--foreground))" }}
+        >
           {profile?.username || "مستخدم جديد"}
         </h2>
         <span className="text-xs font-space font-bold bg-accent/20 text-accent px-3 py-1 rounded-full inline-block mt-2">
@@ -79,6 +86,7 @@ const Profile = () => {
         {profileMenuItems.map((item) => (
           <button
             key={item.label}
+            onClick={() => item.route && navigate(item.route)}
             className="w-full flex items-center gap-3 py-4 border-b border-border text-foreground hover:text-primary transition-colors"
           >
             <item.icon className="w-5 h-5" />

@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      friend_requests: {
+        Row: {
+          created_at: string
+          id: string
+          receiver_id: string
+          sender_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          receiver_id: string
+          sender_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
@@ -84,6 +108,7 @@ export type Database = {
           id: string
           is_online: boolean
           level: number
+          name_color: string | null
           updated_at: string
           user_id: string
           username: string
@@ -98,6 +123,7 @@ export type Database = {
           id?: string
           is_online?: boolean
           level?: number
+          name_color?: string | null
           updated_at?: string
           user_id: string
           username: string
@@ -112,6 +138,7 @@ export type Database = {
           id?: string
           is_online?: boolean
           level?: number
+          name_color?: string | null
           updated_at?: string
           user_id?: string
           username?: string

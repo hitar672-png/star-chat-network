@@ -1,6 +1,7 @@
 import { X, MessageSquare, User, Flag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tables } from "@/integrations/supabase/types";
+import FriendRequestButton from "@/components/FriendRequestButton";
 
 interface Props {
   profile: Tables<"profiles">;
@@ -25,10 +26,19 @@ const UserProfileModal = ({ profile, onClose }: Props) => {
         </div>
 
         <div className="flex flex-col items-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-muted border-3 border-accent flex items-center justify-center mb-3">
-            <span className="text-3xl">👤</span>
+          <div className="w-20 h-20 rounded-full bg-muted border-3 border-accent flex items-center justify-center mb-3 overflow-hidden">
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-3xl">👤</span>
+            )}
           </div>
-          <h4 className="text-lg font-cairo font-bold text-foreground">{profile.username}</h4>
+          <h4
+            className="text-lg font-cairo font-bold"
+            style={{ color: (profile as any)?.name_color || "hsl(var(--foreground))" }}
+          >
+            {profile.username}
+          </h4>
           <div className="flex items-center gap-3 mt-1">
             <span className="text-xs font-space font-bold bg-accent/20 text-accent px-2 py-0.5 rounded-full">
               مستوى {profile.level}
@@ -47,6 +57,7 @@ const UserProfileModal = ({ profile, onClose }: Props) => {
         </div>
 
         <div className="space-y-2">
+          <FriendRequestButton targetUserId={profile.user_id} />
           <button
             onClick={() => {
               onClose();

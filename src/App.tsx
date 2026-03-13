@@ -22,6 +22,7 @@ import SearchUsers from "./pages/SearchUsers";
 import Likes from "./pages/Likes";
 import Levels from "./pages/Levels";
 import Gifts from "./pages/Gifts";
+import EditProfile from "./pages/EditProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/chat/:roomId" element={<ChatRoom />} />
             <Route path="/rooms" element={<Rooms />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/edit-profile" element={<EditProfile />} />
             <Route path="/user/:userId" element={<UserProfile />} />
             <Route path="/menu" element={<MenuPage />} />
             <Route path="/online" element={<OnlineUsers />} />
