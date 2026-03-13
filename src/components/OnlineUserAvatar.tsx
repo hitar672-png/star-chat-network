@@ -3,6 +3,7 @@ interface UserData {
   username: string;
   level: number;
   borderColor: string;
+  avatarUrl?: string | null;
 }
 
 interface Props {
@@ -13,8 +14,12 @@ interface Props {
 const OnlineUserAvatar = ({ user, onClick }: Props) => {
   return (
     <button onClick={onClick} className="flex flex-col items-center gap-1">
-      <div className={`relative w-14 h-14 rounded-full bg-muted border-2 ${user.borderColor} flex items-center justify-center`}>
-        <span className="text-xl">👤</span>
+      <div className={`relative w-14 h-14 rounded-full bg-muted border-2 ${user.borderColor} flex items-center justify-center overflow-hidden`}>
+        {user.avatarUrl ? (
+          <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-xl">👤</span>
+        )}
         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
           <span className="text-[9px] font-space font-bold bg-accent text-accent-foreground px-1.5 py-0.5 rounded-full">
             {user.level}

@@ -113,7 +113,7 @@ const ChatRoom = () => {
         <WelcomeBanner />
         <div className="mt-2">
           {messages.map((msg) => (
-            <ChatMessage
+              <ChatMessage
               key={msg.id}
               message={{
                 id: msg.id,
@@ -124,6 +124,8 @@ const ChatRoom = () => {
                 level: msg.profile?.level || 1,
                 country: msg.profile?.country || undefined,
                 gender: msg.profile?.gender || undefined,
+                avatarUrl: msg.profile?.avatar_url || null,
+                nameColor: (msg.profile as any)?.name_color || null,
               }}
               onAvatarClick={() => handleAvatarClick(msg.profile)}
             />

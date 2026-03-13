@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
+import FriendRequestButton from "@/components/FriendRequestButton";
 
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -31,14 +32,23 @@ const UserProfile = () => {
           <X className="w-6 h-6" />
         </button>
         <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <div className="w-24 h-24 rounded-full bg-muted border-4 border-primary flex items-center justify-center">
-            <span className="text-4xl">👤</span>
+          <div className="w-24 h-24 rounded-full bg-muted border-4 border-primary flex items-center justify-center overflow-hidden">
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-4xl">👤</span>
+            )}
           </div>
         </div>
       </div>
 
       <div className="pt-16 text-center px-6">
-        <h2 className="text-xl font-cairo font-bold text-foreground">{profile.username}</h2>
+        <h2
+          className="text-xl font-cairo font-bold"
+          style={{ color: (profile as any)?.name_color || "hsl(var(--foreground))" }}
+        >
+          {profile.username}
+        </h2>
         <div className="flex items-center justify-center gap-3 mt-2">
           <span className="text-xs font-space font-bold bg-accent/20 text-accent px-3 py-1 rounded-full">
             مستوى {profile.level}
@@ -57,7 +67,8 @@ const UserProfile = () => {
         )}
       </div>
 
-      <div className="px-6 mt-6">
+      <div className="px-6 mt-6 space-y-3">
+        <FriendRequestButton targetUserId={profile.user_id} />
         <button
           onClick={() => navigate(`/private/${profile.user_id}`)}
           className="w-full flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-cairo font-bold py-3 rounded-xl hover:bg-secondary/90 transition-all"

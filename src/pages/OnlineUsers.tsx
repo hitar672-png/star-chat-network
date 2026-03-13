@@ -116,6 +116,7 @@ const OnlineUsers = () => {
                   username: u.username,
                   level: u.level,
                   borderColor: u.gender === "female" ? "border-primary" : "border-accent",
+                  avatarUrl: u.avatar_url,
                 }}
                 onClick={() => navigate(`/user/${u.user_id}`)}
               />

@@ -9,6 +9,8 @@ interface MessageData {
   level: number;
   country?: string;
   gender?: string;
+  avatarUrl?: string | null;
+  nameColor?: string | null;
 }
 
 interface Props {
@@ -38,9 +40,10 @@ const ChatMessage = ({ message, onAvatarClick }: Props) => {
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <span
-              className={`text-sm font-cairo font-bold ${
-                message.isOwn ? "text-primary" : message.gender === "female" ? "text-primary" : "text-foreground"
-              }`}
+              className="text-sm font-cairo font-bold"
+              style={{
+                color: message.nameColor || (message.isOwn ? "hsl(var(--primary))" : message.gender === "female" ? "hsl(var(--primary))" : "hsl(var(--foreground))"),
+              }}
             >
               {message.username}
             </span>
@@ -57,8 +60,12 @@ const ChatMessage = ({ message, onAvatarClick }: Props) => {
         </div>
 
         <button onClick={onAvatarClick} className="flex flex-col items-center gap-1">
-          <div className={`w-12 h-12 rounded-full bg-muted border-2 ${message.gender === "female" ? "border-primary" : "border-accent"} flex items-center justify-center`}>
-            <span className="text-lg">👤</span>
+          <div className={`w-12 h-12 rounded-full bg-muted border-2 ${message.gender === "female" ? "border-primary" : "border-accent"} flex items-center justify-center overflow-hidden`}>
+            {message.avatarUrl ? (
+              <img src={message.avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-lg">👤</span>
+            )}
           </div>
           <span className="text-[10px] font-space font-bold text-accent bg-accent/20 px-2 py-0.5 rounded-full">
             {message.level}
