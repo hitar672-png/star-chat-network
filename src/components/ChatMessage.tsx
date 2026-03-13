@@ -39,6 +39,13 @@ const ChatMessage = ({ message, onAvatarClick }: Props) => {
 
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
+            <div className="w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
+              {message.avatarUrl ? (
+                <img src={message.avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xs">👤</span>
+              )}
+            </div>
             <span
               className="text-sm font-cairo font-bold"
               style={{

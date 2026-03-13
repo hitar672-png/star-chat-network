@@ -23,6 +23,7 @@ import Likes from "./pages/Likes";
 import Levels from "./pages/Levels";
 import Gifts from "./pages/Gifts";
 import EditProfile from "./pages/EditProfile";
+import UpgradeAccount from "./pages/UpgradeAccount";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/likes" element={<Likes />} />
             <Route path="/levels" element={<Levels />} />
             <Route path="/gifts" element={<Gifts />} />
+            <Route path="/upgrade" element={<UpgradeAccount />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
