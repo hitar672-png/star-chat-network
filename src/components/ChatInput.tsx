@@ -1,5 +1,7 @@
 import { Send, Smile } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Props {
   onSend: (text: string) => void;
@@ -7,6 +9,10 @@ interface Props {
 
 const ChatInput = ({ onSend }: Props) => {
   const [text, setText] = useState("");
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const isGuest = user?.email?.includes("@globalchat.app");
 
   const handleSend = () => {
     if (text.trim()) {
@@ -17,10 +23,14 @@ const ChatInput = ({ onSend }: Props) => {
 
   return (
     <div className="fixed bottom-14 left-0 right-0 glass-panel border-t border-border px-3 py-2 z-40">
-      {/* Subscribe banner */}
-      <button className="w-full bg-accent text-accent-foreground text-sm font-cairo font-bold py-2 rounded-lg mb-2 hover:bg-accent/90 transition-colors">
-        💚 أكمل الاشتراك بالضغط هنا
-      </button>
+      {isGuest && (
+        <button
+          onClick={() => navigate("/upgrade")}
+          className="w-full bg-accent text-accent-foreground text-sm font-cairo font-bold py-2 rounded-lg mb-2 hover:bg-accent/90 transition-colors"
+        >
+          💚 أكمل الاشتراك بالضغط هنا
+        </button>
+      )}
       
       <div className="flex items-center gap-2">
         <button
