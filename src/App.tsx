@@ -55,6 +55,7 @@ const App = () => (
             <Route path="/likes" element={<Likes />} />
             <Route path="/levels" element={<Levels />} />
             <Route path="/gifts" element={<Gifts />} />
+            <Route path="/upgrade" element={<UpgradeAccount />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
