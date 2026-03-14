@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import TopToolbar from "@/components/TopToolbar";
 import BottomNav from "@/components/BottomNav";
 import ChatMessage from "@/components/ChatMessage";
@@ -17,10 +18,12 @@ interface MessageWithProfile {
   user_id: string;
   room_id: string;
   profile?: Tables<"profiles"> | null;
+  userEmail?: string;
 }
 
 const ChatRoom = () => {
   const { roomId } = useParams<{ roomId: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [messages, setMessages] = useState<MessageWithProfile[]>([]);
   const [roomName, setRoomName] = useState("الغرفة العامة");
@@ -31,78 +34,55 @@ const ChatRoom = () => {
   const fetchProfile = useCallback(async (userId: string): Promise<Tables<"profiles"> | null> => {
     if (profilesCacheRef.current[userId]) return profilesCacheRef.current[userId];
     const { data } = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
-    if (data) {
-      profilesCacheRef.current[userId] = data;
-    }
+    if (data) profilesCacheRef.current[userId] = data;
     return data;
   }, []);
 
   useEffect(() => {
     if (!roomId) return;
-
     supabase.from("rooms").select("name").eq("id", roomId).maybeSingle().then(({ data }) => {
       if (data) setRoomName(data.name);
     });
 
     const fetchMessages = async () => {
       const { data } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("room_id", roomId)
-        .order("created_at", { ascending: true })
-        .limit(100);
-      
+        .from("messages").select("*").eq("room_id", roomId)
+        .order("created_at", { ascending: true }).limit(100);
       if (!data) return;
 
-      const userIds = [...new Set(data.map((m) => m.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("*")
-        .in("user_id", userIds);
-
+      const userIds = [...new Set(data.map(m => m.user_id))];
+      const { data: profiles } = await supabase.from("profiles").select("*").in("user_id", userIds);
       const profileMap: Record<string, Tables<"profiles">> = {};
-      profiles?.forEach((p) => { profileMap[p.user_id] = p; });
+      profiles?.forEach(p => { profileMap[p.user_id] = p; });
       profilesCacheRef.current = { ...profilesCacheRef.current, ...profileMap };
-
-      setMessages(data.map((m) => ({ ...m, profile: profileMap[m.user_id] || null })));
+      setMessages(data.map(m => ({ ...m, profile: profileMap[m.user_id] || null })));
     };
     fetchMessages();
 
     const channel = supabase
       .channel(`room-${roomId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `room_id=eq.${roomId}` },
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `room_id=eq.${roomId}` },
         async (payload) => {
           const msg = payload.new as Tables<"messages">;
           const profile = await fetchProfile(msg.user_id);
-          setMessages((prev) => [...prev, { ...msg, profile }]);
+          setMessages(prev => [...prev, { ...msg, profile }]);
         }
-      )
-      .subscribe();
+      ).subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [roomId, fetchProfile]);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
   const handleSend = async (text: string) => {
     if (!user || !roomId) return;
-    await supabase.from("messages").insert({
-      room_id: roomId,
-      user_id: user.id,
-      text,
-    });
+    await supabase.from("messages").insert({ room_id: roomId, user_id: user.id, text });
   };
 
   const handleAvatarClick = (profile: Tables<"profiles"> | null | undefined) => {
-    if (profile && profile.user_id !== user?.id) {
-      setSelectedUser(profile);
-    }
+    if (profile && profile.user_id !== user?.id) setSelectedUser(profile);
   };
 
   return (
@@ -112,8 +92,8 @@ const ChatRoom = () => {
       <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide pb-36">
         <WelcomeBanner />
         <div className="mt-2">
-          {messages.map((msg) => (
-              <ChatMessage
+          {messages.map(msg => (
+            <ChatMessage
               key={msg.id}
               message={{
                 id: msg.id,
@@ -126,6 +106,7 @@ const ChatRoom = () => {
                 gender: msg.profile?.gender || undefined,
                 avatarUrl: msg.profile?.avatar_url || null,
                 nameColor: (msg.profile as any)?.name_color || null,
+                isGuest: msg.profile?.username?.startsWith("زائر_") || false,
               }}
               onAvatarClick={() => handleAvatarClick(msg.profile)}
             />
@@ -137,10 +118,7 @@ const ChatRoom = () => {
       <BottomNav />
 
       {selectedUser && (
-        <UserProfileModal
-          profile={selectedUser}
-          onClose={() => setSelectedUser(null)}
-        />
+        <UserProfileModal profile={selectedUser} onClose={() => setSelectedUser(null)} />
       )}
     </div>
   );

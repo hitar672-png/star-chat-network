@@ -2,6 +2,7 @@ import { Send, Smile } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import EmojiPicker from "./EmojiPicker";
 
 interface Props {
   onSend: (text: string) => void;
@@ -9,6 +10,7 @@ interface Props {
 
 const ChatInput = ({ onSend }: Props) => {
   const [text, setText] = useState("");
+  const [showEmoji, setShowEmoji] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -32,7 +34,7 @@ const ChatInput = ({ onSend }: Props) => {
         </button>
       )}
       
-      <div className="flex items-center gap-2">
+      <div className="relative flex items-center gap-2">
         <button
           onClick={handleSend}
           className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground hover:bg-secondary/80 transition-colors flex-shrink-0"
@@ -48,9 +50,22 @@ const ChatInput = ({ onSend }: Props) => {
           className="flex-1 bg-muted border border-border rounded-full px-4 py-2 text-sm font-cairo text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           dir="rtl"
         />
-        <button className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
-          <Smile className="w-5 h-5" />
-        </button>
+        <div className="relative flex-shrink-0">
+          <button
+            onClick={() => setShowEmoji(!showEmoji)}
+            className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Smile className="w-5 h-5" />
+          </button>
+          {showEmoji && (
+            <div className="absolute bottom-12 left-0 w-[280px]" style={{ direction: "ltr" }}>
+              <EmojiPicker
+                onSelect={(emoji) => setText(prev => prev + emoji)}
+                onClose={() => setShowEmoji(false)}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

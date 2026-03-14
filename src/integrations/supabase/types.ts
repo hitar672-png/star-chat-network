@@ -109,6 +109,7 @@ export type Database = {
           is_online: boolean
           level: number
           name_color: string | null
+          status: string | null
           updated_at: string
           user_id: string
           username: string
@@ -124,6 +125,7 @@ export type Database = {
           is_online?: boolean
           level?: number
           name_color?: string | null
+          status?: string | null
           updated_at?: string
           user_id: string
           username: string
@@ -139,6 +141,7 @@ export type Database = {
           is_online?: boolean
           level?: number
           name_color?: string | null
+          status?: string | null
           updated_at?: string
           user_id?: string
           username?: string
