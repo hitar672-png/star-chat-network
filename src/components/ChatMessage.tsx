@@ -11,6 +11,7 @@ interface MessageData {
   gender?: string;
   avatarUrl?: string | null;
   nameColor?: string | null;
+  isGuest?: boolean;
 }
 
 interface Props {
@@ -39,13 +40,13 @@ const ChatMessage = ({ message, onAvatarClick }: Props) => {
 
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
+            <button onClick={onAvatarClick} className="w-7 h-7 rounded-full bg-muted border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
               {message.avatarUrl ? (
                 <img src={message.avatarUrl} alt="" className="w-full h-full object-cover" />
               ) : (
                 <span className="text-xs">👤</span>
               )}
-            </div>
+            </button>
             <span
               className="text-sm font-cairo font-bold"
               style={{
@@ -53,6 +54,14 @@ const ChatMessage = ({ message, onAvatarClick }: Props) => {
               }}
             >
               {message.username}
+            </span>
+            {/* Guest/Member badge */}
+            <span className={`text-[9px] font-cairo font-bold px-1.5 py-0.5 rounded-full ${
+              message.isGuest
+                ? "bg-muted text-muted-foreground"
+                : "bg-accent/20 text-accent"
+            }`}>
+              {message.isGuest ? "زائر" : "عضو"}
             </span>
             {message.country && <span className="text-sm">{message.country}</span>}
             {message.gender && (

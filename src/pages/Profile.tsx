@@ -1,12 +1,13 @@
-import { X, Eye, CreditCard, Heart, Volume2, Shield, LogOut, Edit } from "lucide-react";
+import { ArrowRight, Eye, Heart, Volume2, Shield, LogOut, Edit, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import ImagePreviewModal from "@/components/ImagePreviewModal";
 
 const profileMenuItems = [
   { icon: Edit, label: "تحرير البيانات", route: "/edit-profile" },
-  { icon: Heart, label: "تعديل الحالة", route: "" },
+  { icon: Users, label: "الأصدقاء", route: "/friends" },
   { icon: Volume2, label: "إعدادات الصوت", route: "/sound" },
 ];
 
@@ -20,6 +21,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState("حساب");
+  const [showImage, setShowImage] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -32,20 +34,20 @@ const Profile = () => {
       <div className="relative bg-secondary h-56">
         <div className="absolute top-4 right-4 flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-secondary-foreground">
-            <X className="w-6 h-6" />
+            <ArrowRight className="w-6 h-6" />
           </button>
           <button className="text-secondary-foreground">
             <Eye className="w-6 h-6" />
           </button>
         </div>
         <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <div className="w-24 h-24 rounded-full bg-muted border-4 border-primary flex items-center justify-center overflow-hidden">
+          <button onClick={() => profile?.avatar_url && setShowImage(true)} className="w-24 h-24 rounded-full bg-muted border-4 border-primary flex items-center justify-center overflow-hidden">
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
               <span className="text-4xl">👤</span>
             )}
-          </div>
+          </button>
         </div>
       </div>
 
@@ -54,48 +56,36 @@ const Profile = () => {
           {profile?.gender === "male" ? "♂ ذكر" : profile?.gender === "female" ? "♀ أنثى" : ""}
           {profile?.age ? ` • ${profile.age} سنة` : ""}
         </p>
-        <h2
-          className="text-xl font-cairo font-bold mt-1"
-          style={{ color: (profile as any)?.name_color || "hsl(var(--foreground))" }}
-        >
+        <h2 className="text-xl font-cairo font-bold mt-1" style={{ color: (profile as any)?.name_color || "hsl(var(--foreground))" }}>
           {profile?.username || "مستخدم جديد"}
         </h2>
+        {(profile as any)?.status && (
+          <p className="text-xs font-cairo text-muted-foreground mt-1 bg-muted inline-block px-3 py-1 rounded-full">{(profile as any).status}</p>
+        )}
         <span className="text-xs font-space font-bold bg-accent/20 text-accent px-3 py-1 rounded-full inline-block mt-2">
           مستوى {profile?.level || 1}
         </span>
       </div>
 
-      {/* Tabs */}
       <div className="flex items-center justify-center gap-3 py-4">
-        {settingsTabs.map((tab) => (
-          <button
-            key={tab.label}
-            onClick={() => setActiveTab(tab.label)}
-            className={`px-5 py-2 rounded-full text-sm font-cairo font-semibold transition-all ${
-              activeTab === tab.label
-                ? "bg-secondary text-secondary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            }`}
-          >
+        {settingsTabs.map(tab => (
+          <button key={tab.label} onClick={() => setActiveTab(tab.label)}
+            className={`px-5 py-2 rounded-full text-sm font-cairo font-semibold transition-all ${activeTab === tab.label ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
             {tab.label}
           </button>
         ))}
       </div>
 
       <div className="px-6 space-y-0">
-        {profileMenuItems.map((item) => (
-          <button
-            key={item.label}
-            onClick={() => item.route && navigate(item.route)}
-            className="w-full flex items-center gap-3 py-4 border-b border-border text-foreground hover:text-primary transition-colors"
-          >
+        {profileMenuItems.map(item => (
+          <button key={item.label} onClick={() => item.route && navigate(item.route)}
+            className="w-full flex items-center gap-3 py-4 border-b border-border text-foreground hover:text-primary transition-colors">
             <item.icon className="w-5 h-5" />
             <span className="text-sm font-cairo font-medium">{item.label}</span>
           </button>
         ))}
       </div>
 
-      {/* Account ID */}
       <div className="mx-6 mt-6 bg-card border border-border rounded-xl p-4">
         <div className="flex items-center gap-2 mb-2">
           <Shield className="w-4 h-4 text-accent" />
@@ -107,16 +97,17 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Sign out */}
       <div className="px-6 mt-6 mb-8">
-        <button
-          onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 bg-destructive text-destructive-foreground font-cairo font-bold py-3 rounded-xl hover:bg-destructive/90 transition-all"
-        >
+        <button onClick={handleSignOut}
+          className="w-full flex items-center justify-center gap-2 bg-destructive text-destructive-foreground font-cairo font-bold py-3 rounded-xl hover:bg-destructive/90 transition-all">
           <LogOut className="w-5 h-5" />
           <span>تسجيل الخروج</span>
         </button>
       </div>
+
+      {showImage && profile?.avatar_url && (
+        <ImagePreviewModal imageUrl={profile.avatar_url} onClose={() => setShowImage(false)} />
+      )}
     </div>
   );
 };

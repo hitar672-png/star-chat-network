@@ -36,114 +36,68 @@ const Rooms = () => {
   const fetchProfile = useCallback(async (userId: string): Promise<Tables<"profiles"> | null> => {
     if (profilesCacheRef.current[userId]) return profilesCacheRef.current[userId];
     const { data } = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
-    if (data) {
-      profilesCacheRef.current[userId] = data;
-    }
+    if (data) profilesCacheRef.current[userId] = data;
     return data;
   }, []);
 
   useEffect(() => {
-    const fetchRooms = async () => {
-      const { data } = await supabase
-        .from("rooms")
-        .select("*")
-        .order("is_pinned", { ascending: false });
+    supabase.from("rooms").select("*").order("is_pinned", { ascending: false }).then(({ data }) => {
       if (data) setRooms(data);
-    };
-    fetchRooms();
+    });
   }, []);
 
-  // Fetch public chat messages
   useEffect(() => {
     if (activeTab !== "chat") return;
-
     const fetchMessages = async () => {
-      const { data } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("room_id", PUBLIC_ROOM_ID)
-        .order("created_at", { ascending: true })
-        .limit(100);
-
+      const { data } = await supabase.from("messages").select("*").eq("room_id", PUBLIC_ROOM_ID)
+        .order("created_at", { ascending: true }).limit(100);
       if (!data) return;
-
-      const userIds = [...new Set(data.map((m) => m.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("*")
-        .in("user_id", userIds);
-
+      const userIds = [...new Set(data.map(m => m.user_id))];
+      const { data: profiles } = await supabase.from("profiles").select("*").in("user_id", userIds);
       const profileMap: Record<string, Tables<"profiles">> = {};
-      profiles?.forEach((p) => { profileMap[p.user_id] = p; });
+      profiles?.forEach(p => { profileMap[p.user_id] = p; });
       profilesCacheRef.current = { ...profilesCacheRef.current, ...profileMap };
-      setMessages(data.map((m) => ({ ...m, profile: profileMap[m.user_id] || null })));
+      setMessages(data.map(m => ({ ...m, profile: profileMap[m.user_id] || null })));
     };
     fetchMessages();
 
     const channel = supabase
       .channel(`room-public`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `room_id=eq.${PUBLIC_ROOM_ID}` },
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `room_id=eq.${PUBLIC_ROOM_ID}` },
         async (payload) => {
           const msg = payload.new as Tables<"messages">;
           const profile = await fetchProfile(msg.user_id);
-          setMessages((prev) => [...prev, { ...msg, profile }]);
+          setMessages(prev => [...prev, { ...msg, profile }]);
         }
-      )
-      .subscribe();
+      ).subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [activeTab, fetchProfile]);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
   const handleSend = async (text: string) => {
     if (!user) return;
-    await supabase.from("messages").insert({
-      room_id: PUBLIC_ROOM_ID,
-      user_id: user.id,
-      text,
-    });
+    await supabase.from("messages").insert({ room_id: PUBLIC_ROOM_ID, user_id: user.id, text });
   };
 
   const handleAvatarClick = (profile: Tables<"profiles"> | null | undefined) => {
-    if (profile && profile.user_id !== user?.id) {
-      setSelectedUser(profile);
-    }
+    if (profile && profile.user_id !== user?.id) setSelectedUser(profile);
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <TopToolbar roomName={activeTab === "chat" ? "الدردشة العامة" : undefined} />
-
-      {/* Tabs */}
       <div className="flex border-b border-border bg-card sticky top-[auto] z-40">
-        <button
-          onClick={() => setActiveTab("chat")}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 font-cairo font-bold text-sm transition-all ${
-            activeTab === "chat"
-              ? "text-primary border-b-2 border-primary bg-primary/5"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <MessageSquare className="w-4 h-4" />
-          <span>الدردشة العامة</span>
+        <button onClick={() => setActiveTab("chat")}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 font-cairo font-bold text-sm transition-all ${activeTab === "chat" ? "text-primary border-b-2 border-primary bg-primary/5" : "text-muted-foreground hover:text-foreground"}`}>
+          <MessageSquare className="w-4 h-4" /><span>الدردشة العامة</span>
         </button>
-        <button
-          onClick={() => setActiveTab("rooms")}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 font-cairo font-bold text-sm transition-all ${
-            activeTab === "rooms"
-              ? "text-primary border-b-2 border-primary bg-primary/5"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <List className="w-4 h-4" />
-          <span>الغرف</span>
+        <button onClick={() => setActiveTab("rooms")}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 font-cairo font-bold text-sm transition-all ${activeTab === "rooms" ? "text-primary border-b-2 border-primary bg-primary/5" : "text-muted-foreground hover:text-foreground"}`}>
+          <List className="w-4 h-4" /><span>الغرف</span>
         </button>
       </div>
 
@@ -152,9 +106,8 @@ const Rooms = () => {
           <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide pb-36">
             <WelcomeBanner />
             <div className="mt-2">
-              {messages.map((msg) => (
-                <ChatMessage
-                  key={msg.id}
+              {messages.map(msg => (
+                <ChatMessage key={msg.id}
                   message={{
                     id: msg.id,
                     username: msg.profile?.username || "مجهول",
@@ -164,6 +117,9 @@ const Rooms = () => {
                     level: msg.profile?.level || 1,
                     country: msg.profile?.country || undefined,
                     gender: msg.profile?.gender || undefined,
+                    avatarUrl: msg.profile?.avatar_url || null,
+                    nameColor: (msg.profile as any)?.name_color || null,
+                    isGuest: msg.profile?.username?.startsWith("زائر_") || false,
                   }}
                   onAvatarClick={() => handleAvatarClick(msg.profile)}
                 />
@@ -176,30 +132,14 @@ const Rooms = () => {
         <div className="flex-1 px-4 py-4 space-y-3 pb-20">
           {rooms.map((room, i) => (
             <div key={room.id} style={{ animationDelay: `${i * 0.05}s` }}>
-              <RoomCard
-                room={{
-                  id: room.id,
-                  name: room.name,
-                  description: room.description || "",
-                  image: room.image || "🌍",
-                  onlineCount: 0,
-                  isPinned: room.is_pinned,
-                }}
-                onClick={() => navigate(`/chat/${room.id}`)}
-              />
+              <RoomCard room={{ id: room.id, name: room.name, description: room.description || "", image: room.image || "🌍", onlineCount: 0, isPinned: room.is_pinned }} onClick={() => navigate(`/chat/${room.id}`)} />
             </div>
           ))}
         </div>
       )}
 
       <BottomNav />
-
-      {selectedUser && (
-        <UserProfileModal
-          profile={selectedUser}
-          onClose={() => setSelectedUser(null)}
-        />
-      )}
+      {selectedUser && <UserProfileModal profile={selectedUser} onClose={() => setSelectedUser(null)} />}
     </div>
   );
 };

@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Camera, Check } from "lucide-react";
+import { ArrowRight, Camera, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -19,6 +19,27 @@ const NAME_COLORS = [
   { label: "سماوي", value: "#06b6d4" },
 ];
 
+const COUNTRIES = [
+  { flag: "🇾🇪", name: "اليمن" },
+  { flag: "🇮🇶", name: "العراق" },
+  { flag: "🇸🇾", name: "سوريا" },
+  { flag: "🇱🇧", name: "لبنان" },
+  { flag: "🇶🇦", name: "قطر" },
+  { flag: "🇸🇦", name: "السعودية" },
+  { flag: "🇪🇬", name: "مصر" },
+  { flag: "🇦🇪", name: "الإمارات" },
+  { flag: "🇯🇴", name: "الأردن" },
+  { flag: "🇰🇼", name: "الكويت" },
+  { flag: "🇧🇭", name: "البحرين" },
+  { flag: "🇴🇲", name: "عمان" },
+  { flag: "🇲🇦", name: "المغرب" },
+  { flag: "🇹🇳", name: "تونس" },
+  { flag: "🇩🇿", name: "الجزائر" },
+  { flag: "🇱🇾", name: "ليبيا" },
+  { flag: "🇸🇩", name: "السودان" },
+  { flag: "🇵🇸", name: "فلسطين" },
+];
+
 const EditProfile = () => {
   const navigate = useNavigate();
   const { user, profile, refreshProfile } = useAuth();
@@ -27,14 +48,32 @@ const EditProfile = () => {
   const [username, setUsername] = useState(profile?.username || "");
   const [bio, setBio] = useState(profile?.bio || "");
   const [age, setAge] = useState(profile?.age?.toString() || "");
-  const [nameColor, setNameColor] = useState(
-    (profile as any)?.name_color || ""
-  );
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(
-    profile?.avatar_url || null
-  );
+  const [status, setStatus] = useState((profile as any)?.status || "");
+  const [country, setCountry] = useState(profile?.country || "");
+  const [nameColor, setNameColor] = useState((profile as any)?.name_color || "");
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Auto-detect country on first load if not set
+  useEffect(() => {
+    if (!country) {
+      fetch("https://ipapi.co/json/")
+        .then(r => r.json())
+        .then(data => {
+          const countryMap: Record<string, string> = {
+            YE: "🇾🇪", IQ: "🇮🇶", SY: "🇸🇾", LB: "🇱🇧", QA: "🇶🇦",
+            SA: "🇸🇦", EG: "🇪🇬", AE: "🇦🇪", JO: "🇯🇴", KW: "🇰🇼",
+            BH: "🇧🇭", OM: "🇴🇲", MA: "🇲🇦", TN: "🇹🇳", DZ: "🇩🇿",
+            LY: "🇱🇾", SD: "🇸🇩", PS: "🇵🇸",
+          };
+          if (data.country_code && countryMap[data.country_code]) {
+            setCountry(countryMap[data.country_code]);
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -50,21 +89,14 @@ const EditProfile = () => {
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
-
     try {
       let avatarUrl = profile?.avatar_url || null;
-
       if (avatarFile) {
         const ext = avatarFile.name.split(".").pop();
         const path = `${user.id}/avatar.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(path, avatarFile, { upsert: true });
+        const { error: uploadError } = await supabase.storage.from("avatars").upload(path, avatarFile, { upsert: true });
         if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-          .from("avatars")
-          .getPublicUrl(path);
+        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
         avatarUrl = urlData.publicUrl;
       }
 
@@ -76,11 +108,12 @@ const EditProfile = () => {
           age: age ? parseInt(age) : null,
           avatar_url: avatarUrl,
           name_color: nameColor || null,
+          country: country || null,
+          status: status.trim() || null,
         } as any)
         .eq("user_id", user.id);
 
       if (error) throw error;
-
       await refreshProfile();
       toast.success("تم تحديث الملف الشخصي");
       navigate("/profile");
@@ -92,37 +125,22 @@ const EditProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
+    <div className="min-h-screen bg-background pb-8">
       <div className="sticky top-0 z-50 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
         <button onClick={() => navigate(-1)} className="text-muted-foreground">
-          <X className="w-6 h-6" />
+          <ArrowRight className="w-6 h-6" />
         </button>
-        <h1 className="text-lg font-cairo font-bold text-foreground">
-          تعديل الملف الشخصي
-        </h1>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="text-primary disabled:opacity-50"
-        >
+        <h1 className="text-lg font-cairo font-bold text-foreground">تعديل الملف الشخصي</h1>
+        <button onClick={handleSave} disabled={saving} className="text-primary disabled:opacity-50">
           <Check className="w-6 h-6" />
         </button>
       </div>
 
-      {/* Avatar */}
       <div className="flex justify-center py-8">
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="relative"
-        >
+        <button onClick={() => fileInputRef.current?.click()} className="relative">
           <div className="w-28 h-28 rounded-full bg-muted border-4 border-primary flex items-center justify-center overflow-hidden">
             {avatarPreview ? (
-              <img
-                src={avatarPreview}
-                alt="avatar"
-                className="w-full h-full object-cover"
-              />
+              <img src={avatarPreview} alt="avatar" className="w-full h-full object-cover" />
             ) : (
               <span className="text-5xl">👤</span>
             )}
@@ -131,93 +149,67 @@ const EditProfile = () => {
             <Camera className="w-4 h-4" />
           </div>
         </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleFileSelect}
-        />
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
       </div>
 
-      {/* Form */}
       <div className="px-6 space-y-5">
         <div>
-          <label className="text-sm font-cairo font-bold text-foreground mb-2 block">
-            الاسم
-          </label>
-          <Input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="font-cairo"
-            dir="rtl"
-            maxLength={20}
-          />
+          <label className="text-sm font-cairo font-bold text-foreground mb-2 block">الاسم</label>
+          <Input value={username} onChange={(e) => setUsername(e.target.value)} className="font-cairo" dir="rtl" maxLength={20} />
         </div>
 
         <div>
-          <label className="text-sm font-cairo font-bold text-foreground mb-2 block">
-            العمر
-          </label>
-          <Input
-            type="number"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            className="font-cairo"
-            min={13}
-            max={99}
-          />
+          <label className="text-sm font-cairo font-bold text-foreground mb-2 block">الحالة</label>
+          <Input value={status} onChange={(e) => setStatus(e.target.value)} className="font-cairo" dir="rtl" maxLength={50} placeholder="مثال: متصل، مشغول، بعيد..." />
         </div>
 
         <div>
-          <label className="text-sm font-cairo font-bold text-foreground mb-2 block">
-            نبذة عنك
-          </label>
-          <Textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            className="font-cairo"
-            dir="rtl"
-            rows={3}
-            maxLength={150}
-            placeholder="اكتب شيئاً عن نفسك..."
-          />
+          <label className="text-sm font-cairo font-bold text-foreground mb-2 block">العمر</label>
+          <Input type="number" value={age} onChange={(e) => setAge(e.target.value)} className="font-cairo" min={13} max={99} />
         </div>
 
-        {/* Name Color */}
         <div>
-          <label className="text-sm font-cairo font-bold text-foreground mb-3 block">
-            لون الاسم في الدردشة
-          </label>
+          <label className="text-sm font-cairo font-bold text-foreground mb-2 block">الدولة</label>
+          <div className="flex flex-wrap gap-2">
+            {COUNTRIES.map(c => (
+              <button
+                key={c.flag}
+                onClick={() => setCountry(c.flag)}
+                className={`flex items-center gap-1 px-3 py-2 rounded-lg border text-sm font-cairo transition-all ${
+                  country === c.flag ? "border-primary bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground"
+                }`}
+              >
+                <span>{c.flag}</span>
+                <span className="text-xs">{c.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-cairo font-bold text-foreground mb-2 block">نبذة عنك</label>
+          <Textarea value={bio} onChange={(e) => setBio(e.target.value)} className="font-cairo" dir="rtl" rows={3} maxLength={150} placeholder="اكتب شيئاً عن نفسك..." />
+        </div>
+
+        <div>
+          <label className="text-sm font-cairo font-bold text-foreground mb-3 block">لون الاسم في الدردشة</label>
           <div className="flex flex-wrap gap-3">
-            {NAME_COLORS.map((c) => (
+            {NAME_COLORS.map(c => (
               <button
                 key={c.value}
                 onClick={() => setNameColor(c.value)}
                 className={`w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center ${
-                  nameColor === c.value
-                    ? "border-primary scale-110"
-                    : "border-border"
+                  nameColor === c.value ? "border-primary scale-110" : "border-border"
                 }`}
-                style={{
-                  backgroundColor: c.value || "hsl(var(--muted))",
-                }}
+                style={{ backgroundColor: c.value || "hsl(var(--muted))" }}
               >
-                {nameColor === c.value && (
-                  <Check className="w-4 h-4 text-primary-foreground" />
-                )}
+                {nameColor === c.value && <Check className="w-4 h-4 text-primary-foreground" />}
               </button>
             ))}
           </div>
-          {/* Preview */}
           <div className="mt-3 bg-card rounded-xl p-3 border border-border">
-            <span className="text-xs font-cairo text-muted-foreground">
-              معاينة:{" "}
-            </span>
-            <span
-              className="text-sm font-cairo font-bold"
-              style={{ color: nameColor || "hsl(var(--foreground))" }}
-            >
+            <span className="text-xs font-cairo text-muted-foreground">معاينة: </span>
+            <span className="text-sm font-cairo font-bold" style={{ color: nameColor || "hsl(var(--foreground))" }}>
               {username || "اسمك"}
             </span>
           </div>
