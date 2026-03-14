@@ -24,6 +24,7 @@ import Levels from "./pages/Levels";
 import Gifts from "./pages/Gifts";
 import EditProfile from "./pages/EditProfile";
 import UpgradeAccount from "./pages/UpgradeAccount";
+import Friends from "./pages/Friends";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
