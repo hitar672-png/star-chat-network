@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Send } from "lucide-react";
+import { ArrowRight, Send } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import EmojiPicker from "@/components/EmojiPicker";
 
 interface PrivateMsg {
   id: string;
@@ -13,20 +14,29 @@ interface PrivateMsg {
   is_read: boolean;
 }
 
+interface PartnerProfile {
+  username: string;
+  avatar_url: string | null;
+  status: string | null;
+  country: string | null;
+  is_online: boolean;
+  last_seen: string | null;
+}
+
 const PrivateChat = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<PrivateMsg[]>([]);
   const [text, setText] = useState("");
-  const [partnerName, setPartnerName] = useState("...");
+  const [partner, setPartner] = useState<PartnerProfile | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!userId || !user) return;
 
-    supabase.from("profiles").select("username").eq("user_id", userId).single().then(({ data }) => {
-      if (data) setPartnerName(data.username);
+    supabase.from("profiles").select("username, avatar_url, status, country, is_online, last_seen").eq("user_id", userId).single().then(({ data }) => {
+      if (data) setPartner(data as any);
     });
 
     const fetchMessages = async () => {
@@ -37,7 +47,6 @@ const PrivateChat = () => {
         .order("created_at", { ascending: true });
       if (data) setMessages(data);
 
-      // Mark as read
       await supabase
         .from("private_messages")
         .update({ is_read: true })
@@ -59,6 +68,10 @@ const PrivateChat = () => {
             (msg.sender_id === userId && msg.receiver_id === user.id)
           ) {
             setMessages((prev) => [...prev, msg]);
+            // Mark as read instantly
+            if (msg.sender_id === userId) {
+              supabase.from("private_messages").update({ is_read: true }).eq("id", msg.id);
+            }
           }
         }
       )
@@ -81,17 +94,41 @@ const PrivateChat = () => {
     setText("");
   };
 
+  const formatLastSeen = (lastSeen: string | null, isOnline: boolean) => {
+    if (isOnline) return "متصل الآن";
+    if (!lastSeen) return "غير متصل";
+    const d = new Date(lastSeen);
+    return `آخر ظهور ${d.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}`;
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="sticky top-0 z-50 bg-toolbar px-4 py-3 flex items-center justify-between">
         <button onClick={() => navigate("/private")} className="text-secondary-foreground">
-          <X className="w-6 h-6" />
+          <ArrowRight className="w-6 h-6" />
         </button>
-        <h1 className="text-lg font-cairo font-bold text-secondary-foreground">{partnerName}</h1>
-        <div className="w-12 h-12 rounded-full bg-muted border-2 border-accent flex items-center justify-center">
-          <span className="text-lg">👤</span>
+        <div className="flex flex-col items-center">
+          <h1 className="text-lg font-cairo font-bold text-secondary-foreground">{partner?.username || "..."}</h1>
+          <span className={`text-[10px] font-cairo ${partner?.is_online ? "text-accent" : "text-muted-foreground"}`}>
+            {partner ? formatLastSeen(partner.last_seen, partner.is_online) : ""}
+          </span>
+        </div>
+        <div className="w-12 h-12 rounded-full bg-muted border-2 border-accent flex items-center justify-center overflow-hidden">
+          {partner?.avatar_url ? (
+            <img src={partner.avatar_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-lg">👤</span>
+          )}
         </div>
       </div>
+
+      {/* Partner info bar */}
+      {partner && (
+        <div className="bg-card/50 border-b border-border px-4 py-2 flex items-center justify-center gap-4 text-[11px] font-cairo text-muted-foreground">
+          {partner.status && <span>💭 {partner.status}</span>}
+          {partner.country && <span>📍 {partner.country}</span>}
+        </div>
+      )}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide px-4 py-4">
         {messages.map((msg) => (
@@ -131,6 +168,7 @@ const PrivateChat = () => {
           className="flex-1 bg-muted border border-border rounded-full px-4 py-2 text-sm font-cairo text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           dir="rtl"
         />
+        <EmojiPicker onSelect={(emoji) => setText(prev => prev + emoji)} />
       </div>
     </div>
   );

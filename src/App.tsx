@@ -25,6 +25,7 @@ import Gifts from "./pages/Gifts";
 import EditProfile from "./pages/EditProfile";
 import UpgradeAccount from "./pages/UpgradeAccount";
 import Friends from "./pages/Friends";
+import RoomsList from "./pages/RoomsList";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="/gifts" element={<Gifts />} />
             <Route path="/upgrade" element={<UpgradeAccount />} />
             <Route path="/friends" element={<Friends />} />
+            <Route path="/rooms-list" element={<RoomsList />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

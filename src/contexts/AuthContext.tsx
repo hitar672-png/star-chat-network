@@ -44,6 +44,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+        // Update last_seen and online status
+        supabase.from("profiles").update({ is_online: true, last_seen: new Date().toISOString() } as any).eq("user_id", session.user.id);
       }
       setLoading(false);
     });

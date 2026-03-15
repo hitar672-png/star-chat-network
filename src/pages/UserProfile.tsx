@@ -1,15 +1,18 @@
-import { ArrowRight, MessageSquare } from "lucide-react";
+import { ArrowRight, MessageSquare, Ban, Flag } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Tables } from "@/integrations/supabase/types";
 import FriendRequestButton from "@/components/FriendRequestButton";
 import ImagePreviewModal from "@/components/ImagePreviewModal";
+import { toast } from "@/hooks/use-toast";
 
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
   const [showImage, setShowImage] = useState(false);
 
   useEffect(() => {
@@ -19,6 +22,12 @@ const UserProfile = () => {
     });
   }, [userId]);
 
+  const handleBlock = async () => {
+    if (!user || !userId) return;
+    await supabase.from("blocks" as any).insert({ blocker_id: user.id, blocked_id: userId });
+    toast({ title: "تم الحظر", description: `تم حظر ${profile?.username}` });
+  };
+
   if (!profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -26,6 +35,15 @@ const UserProfile = () => {
       </div>
     );
   }
+
+  const formatLastSeen = () => {
+    if (profile.is_online) return "🟢 متصل الآن";
+    if (profile.last_seen) {
+      const d = new Date(profile.last_seen);
+      return `آخر ظهور ${d.toLocaleDateString("ar-EG")} ${d.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}`;
+    }
+    return "غير متصل";
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -45,9 +63,15 @@ const UserProfile = () => {
       </div>
 
       <div className="pt-16 text-center px-6">
-        <h2 className="text-xl font-cairo font-bold" style={{ color: (profile as any)?.name_color || "hsl(var(--foreground))" }}>
+        <h2 className="text-xl font-cairo font-bold" style={{ color: profile.name_color || "hsl(var(--foreground))" }}>
           {profile.username}
         </h2>
+        
+        {/* Online status */}
+        <p className={`text-xs font-cairo mt-1 ${profile.is_online ? "text-accent" : "text-muted-foreground"}`}>
+          {formatLastSeen()}
+        </p>
+
         <div className="flex items-center justify-center gap-3 mt-2">
           <span className="text-xs font-space font-bold bg-accent/20 text-accent px-3 py-1 rounded-full">
             مستوى {profile.level}
@@ -59,9 +83,21 @@ const UserProfile = () => {
             <span className="text-xs font-cairo text-muted-foreground">{profile.age} سنة</span>
           )}
         </div>
-        {(profile as any)?.status && (
-          <p className="text-xs font-cairo text-muted-foreground mt-2 bg-muted inline-block px-3 py-1 rounded-full">{(profile as any).status}</p>
+
+        {/* Status */}
+        {profile.status && (
+          <p className="text-xs font-cairo text-muted-foreground mt-2 bg-muted inline-block px-3 py-1 rounded-full">
+            💭 {profile.status}
+          </p>
         )}
+
+        {/* Country */}
+        {profile.country && (
+          <p className="text-xs font-cairo text-muted-foreground mt-2">
+            📍 {profile.country}
+          </p>
+        )}
+
         {profile.bio && (
           <p className="text-sm font-cairo text-muted-foreground mt-4">{profile.bio}</p>
         )}
@@ -73,6 +109,11 @@ const UserProfile = () => {
           className="w-full flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-cairo font-bold py-3 rounded-xl hover:bg-secondary/90 transition-all">
           <MessageSquare className="w-5 h-5" />
           <span>رسالة خاصة</span>
+        </button>
+        <button onClick={handleBlock}
+          className="w-full flex items-center justify-center gap-2 bg-muted text-destructive font-cairo font-bold py-3 rounded-xl hover:bg-destructive/20 transition-all">
+          <Ban className="w-5 h-5" />
+          <span>حظر</span>
         </button>
       </div>
 

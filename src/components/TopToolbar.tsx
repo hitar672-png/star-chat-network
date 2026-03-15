@@ -1,4 +1,4 @@
-import { Menu, Heart, Mail, Bell, Paintbrush, Volume2, UserCheck } from "lucide-react";
+import { Menu, Heart, Mail, Bell, Paintbrush, Volume2, UserCheck, DoorOpen } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +10,7 @@ interface Props {
 
 const toolbarItems = [
   { icon: Menu, label: "قائمة", path: "/menu" },
-  { icon: Heart, label: "الغرف", path: "/rooms" },
+  { icon: DoorOpen, label: "الغرف", path: "/rooms-list" },
   { icon: Mail, label: "خاص", path: "/private", notification: true },
   { icon: Bell, label: "إشعار", path: "/notifications" },
   { icon: Paintbrush, label: "الخط", path: "/font" },
