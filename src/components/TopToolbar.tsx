@@ -1,4 +1,4 @@
-import { Menu, Heart, Mail, Bell, Paintbrush, Volume2, UserCheck } from "lucide-react";
+import { Menu, Heart, Mail, Bell, Paintbrush, Volume2, UserCheck, DoorOpen } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
