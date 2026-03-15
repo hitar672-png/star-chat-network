@@ -1,6 +1,9 @@
 import { ArrowRight, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const fontSizes = [
   { label: "صغير", value: "small", size: "text-xs" },
@@ -24,8 +27,25 @@ const FONT_COLORS = [
 
 const FontSettings = () => {
   const navigate = useNavigate();
-  const [selectedSize, setSelectedSize] = useState("medium");
+  const { user } = useAuth();
+  const [selectedSize, setSelectedSize] = useState(() => localStorage.getItem("chat_font_size") || "medium");
   const [selectedColor, setSelectedColor] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("name_color").eq("user_id", user.id).single().then(({ data }) => {
+      if (data?.name_color) setSelectedColor(data.name_color);
+    });
+  }, [user]);
+
+  const handleSave = async () => {
+    localStorage.setItem("chat_font_size", selectedSize);
+    if (user) {
+      await supabase.from("profiles").update({ name_color: selectedColor || null }).eq("user_id", user.id);
+    }
+    toast({ title: "تم الحفظ", description: "تم حفظ إعدادات الخط بنجاح" });
+    navigate(-1);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -34,7 +54,7 @@ const FontSettings = () => {
           <ArrowRight className="w-6 h-6" />
         </button>
         <h1 className="text-lg font-cairo font-bold text-secondary-foreground">إعدادات الخط</h1>
-        <div className="w-6" />
+        <button onClick={handleSave} className="text-sm font-cairo font-bold text-accent">حفظ</button>
       </div>
 
       <div className="px-6 py-6 space-y-4">

@@ -10,7 +10,7 @@ interface Props {
 
 const toolbarItems = [
   { icon: Menu, label: "قائمة", path: "/menu" },
-  { icon: Heart, label: "الغرف", path: "/rooms" },
+  { icon: DoorOpen, label: "الغرف", path: "/rooms-list" },
   { icon: Mail, label: "خاص", path: "/private", notification: true },
   { icon: Bell, label: "إشعار", path: "/notifications" },
   { icon: Paintbrush, label: "الخط", path: "/font" },
