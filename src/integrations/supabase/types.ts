@@ -107,6 +107,7 @@ export type Database = {
           gender: string | null
           id: string
           is_online: boolean
+          last_seen: string | null
           level: number
           name_color: string | null
           status: string | null
@@ -123,6 +124,7 @@ export type Database = {
           gender?: string | null
           id?: string
           is_online?: boolean
+          last_seen?: string | null
           level?: number
           name_color?: string | null
           status?: string | null
@@ -139,6 +141,7 @@ export type Database = {
           gender?: string | null
           id?: string
           is_online?: boolean
+          last_seen?: string | null
           level?: number
           name_color?: string | null
           status?: string | null
@@ -180,7 +183,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_old_messages: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
