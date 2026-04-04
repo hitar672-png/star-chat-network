@@ -29,6 +29,7 @@ const MenuPage = () => {
       <div className="px-6 py-4">
         {menuItems.map((item) => (
           <button key={item.label}
+            onClick={() => item.route && navigate(item.route)}
             className={`w-full flex items-center gap-3 py-4 border-b border-border transition-colors ${item.danger ? "text-destructive hover:text-destructive/80" : "text-foreground hover:text-primary"}`}>
             <item.icon className="w-5 h-5" />
             <span className="text-sm font-cairo font-medium">{item.label}</span>
