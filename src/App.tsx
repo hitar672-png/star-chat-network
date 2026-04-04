@@ -27,6 +27,7 @@ import EditProfile from "./pages/EditProfile";
 import UpgradeAccount from "./pages/UpgradeAccount";
 import Friends from "./pages/Friends";
 import RoomsList from "./pages/RoomsList";
+import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
