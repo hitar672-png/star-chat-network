@@ -1,14 +1,28 @@
-import { ArrowRight, Eye, Heart, Volume2, Shield, LogOut, Edit, Users } from "lucide-react";
+import { ArrowRight, Eye, Heart, Volume2, Shield, LogOut, Edit, Users, Gift, Type, Star, Info, Globe, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import ImagePreviewModal from "@/components/ImagePreviewModal";
 
-const profileMenuItems = [
+const accountItems = [
   { icon: Edit, label: "تحرير البيانات", route: "/edit-profile" },
   { icon: Users, label: "الأصدقاء", route: "/friends" },
   { icon: Volume2, label: "إعدادات الصوت", route: "/sound" },
+  { icon: Type, label: "إعدادات الخط", route: "/font" },
+];
+
+const giftsItems = [
+  { icon: Gift, label: "هداياي", route: "/gifts" },
+  { icon: Heart, label: "الإعجابات", route: "/likes" },
+  { icon: Star, label: "المستويات", route: "/levels" },
+];
+
+const moreItems = [
+  { icon: Globe, label: "اللغة", route: null },
+  { icon: Shield, label: "الخصوصية والأمان", route: "/menu" },
+  { icon: Info, label: "عن التطبيق", route: null },
+  { icon: Clock, label: "سجل النشاط", route: null },
 ];
 
 const settingsTabs = [
@@ -28,6 +42,8 @@ const Profile = () => {
     toast.success("تم تسجيل الخروج");
     navigate("/");
   };
+
+  const currentItems = activeTab === "حساب" ? accountItems : activeTab === "هدايا" ? giftsItems : moreItems;
 
   return (
     <div className="min-h-screen bg-background">
@@ -62,9 +78,14 @@ const Profile = () => {
         {(profile as any)?.status && (
           <p className="text-xs font-cairo text-muted-foreground mt-1 bg-muted inline-block px-3 py-1 rounded-full">{(profile as any).status}</p>
         )}
-        <span className="text-xs font-space font-bold bg-accent/20 text-accent px-3 py-1 rounded-full inline-block mt-2">
-          مستوى {profile?.level || 1}
-        </span>
+        <div className="flex items-center justify-center gap-3 mt-2">
+          <span className="text-xs font-space font-bold bg-accent/20 text-accent px-3 py-1 rounded-full">
+            مستوى {profile?.level || 1}
+          </span>
+          <span className="text-xs font-cairo text-muted-foreground flex items-center gap-1">
+            <Heart className="w-3 h-3 text-destructive" /> {(profile as any)?.likes_count || 0} إعجاب
+          </span>
+        </div>
       </div>
 
       <div className="flex items-center justify-center gap-3 py-4">
@@ -77,7 +98,7 @@ const Profile = () => {
       </div>
 
       <div className="px-6 space-y-0">
-        {profileMenuItems.map(item => (
+        {currentItems.map(item => (
           <button key={item.label} onClick={() => item.route && navigate(item.route)}
             className="w-full flex items-center gap-3 py-4 border-b border-border text-foreground hover:text-primary transition-colors">
             <item.icon className="w-5 h-5" />

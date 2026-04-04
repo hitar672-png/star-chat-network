@@ -12,9 +12,8 @@ const fontSizes = [
   { label: "كبير جداً", value: "xlarge", size: "text-lg" },
 ];
 
-const FONT_COLORS = [
+const NAME_COLORS = [
   { label: "افتراضي", value: "" },
-  { label: "أبيض", value: "#ffffff" },
   { label: "برتقالي", value: "#ff6b00" },
   { label: "أخضر", value: "#22c55e" },
   { label: "أزرق", value: "#3b82f6" },
@@ -25,23 +24,41 @@ const FONT_COLORS = [
   { label: "سماوي", value: "#06b6d4" },
 ];
 
+const FONT_COLORS = [
+  { label: "افتراضي", value: "" },
+  { label: "أبيض", value: "#ffffff" },
+  { label: "رمادي فاتح", value: "#d1d5db" },
+  { label: "برتقالي", value: "#ff6b00" },
+  { label: "أخضر", value: "#22c55e" },
+  { label: "أزرق", value: "#3b82f6" },
+  { label: "أحمر", value: "#ef4444" },
+  { label: "وردي", value: "#ec4899" },
+  { label: "ذهبي", value: "#eab308" },
+  { label: "بنفسجي", value: "#a855f7" },
+];
+
 const FontSettings = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [selectedSize, setSelectedSize] = useState(() => localStorage.getItem("chat_font_size") || "medium");
-  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedNameColor, setSelectedNameColor] = useState("");
+  const [selectedFontColor, setSelectedFontColor] = useState("");
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("name_color").eq("user_id", user.id).single().then(({ data }) => {
-      if (data?.name_color) setSelectedColor(data.name_color);
+    supabase.from("profiles").select("name_color, font_color").eq("user_id", user.id).single().then(({ data }) => {
+      if ((data as any)?.name_color) setSelectedNameColor((data as any).name_color);
+      if ((data as any)?.font_color) setSelectedFontColor((data as any).font_color);
     });
   }, [user]);
 
   const handleSave = async () => {
     localStorage.setItem("chat_font_size", selectedSize);
     if (user) {
-      await supabase.from("profiles").update({ name_color: selectedColor || null }).eq("user_id", user.id);
+      await supabase.from("profiles").update({
+        name_color: selectedNameColor || null,
+        font_color: selectedFontColor || null,
+      } as any).eq("user_id", user.id);
     }
     toast({ title: "تم الحفظ", description: "تم حفظ إعدادات الخط بنجاح" });
     navigate(-1);
@@ -72,29 +89,48 @@ const FontSettings = () => {
           </button>
         ))}
 
-        <h2 className="text-sm font-cairo font-bold text-foreground mb-3 mt-6">لون الخط في الدردشة</h2>
+        <h2 className="text-sm font-cairo font-bold text-foreground mb-3 mt-6">لون الاسم</h2>
         <div className="flex flex-wrap gap-3">
-          {FONT_COLORS.map(c => (
+          {NAME_COLORS.map(c => (
             <button
-              key={c.value}
-              onClick={() => setSelectedColor(c.value)}
+              key={`name-${c.value}`}
+              onClick={() => setSelectedNameColor(c.value)}
               className={`w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center ${
-                selectedColor === c.value ? "border-primary scale-110" : "border-border"
+                selectedNameColor === c.value ? "border-primary scale-110" : "border-border"
               }`}
               style={{ backgroundColor: c.value || "hsl(var(--muted))" }}
             >
-              {selectedColor === c.value && <Check className="w-4 h-4 text-primary-foreground" />}
+              {selectedNameColor === c.value && <Check className="w-4 h-4 text-primary-foreground" />}
+            </button>
+          ))}
+        </div>
+
+        <h2 className="text-sm font-cairo font-bold text-foreground mb-3 mt-6">لون خط الرسائل</h2>
+        <div className="flex flex-wrap gap-3">
+          {FONT_COLORS.map(c => (
+            <button
+              key={`font-${c.value}`}
+              onClick={() => setSelectedFontColor(c.value)}
+              className={`w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center ${
+                selectedFontColor === c.value ? "border-primary scale-110" : "border-border"
+              }`}
+              style={{ backgroundColor: c.value || "hsl(var(--muted))" }}
+            >
+              {selectedFontColor === c.value && <Check className="w-4 h-4 text-primary-foreground" />}
             </button>
           ))}
         </div>
 
         <div className="mt-6 bg-card border border-border rounded-xl p-4">
           <p className="text-sm font-cairo text-muted-foreground mb-2">معاينة:</p>
+          <p className="font-cairo font-bold text-sm mb-1" style={{ color: selectedNameColor || "hsl(var(--foreground))" }}>
+            اسم المستخدم
+          </p>
           <p
             className={`font-cairo ${fontSizes.find(f => f.value === selectedSize)?.size}`}
-            style={{ color: selectedColor || "hsl(var(--foreground))" }}
+            style={{ color: selectedFontColor || "hsl(var(--foreground))" }}
           >
-            هذا نص تجريبي لمعاينة حجم ولون الخط المحدد في الدردشة 💬
+            هذا نص تجريبي لمعاينة لون خط الرسائل 💬
           </p>
         </div>
       </div>

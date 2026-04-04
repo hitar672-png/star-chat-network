@@ -38,6 +38,57 @@ export type Database = {
         }
         Relationships: []
       }
+      gifts: {
+        Row: {
+          created_at: string
+          gift_icon: string
+          gift_name: string
+          gift_type: string
+          id: string
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          gift_icon: string
+          gift_name: string
+          gift_type: string
+          id?: string
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          gift_icon?: string
+          gift_name?: string
+          gift_type?: string
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
+      likes: {
+        Row: {
+          created_at: string
+          id: string
+          liked_id: string
+          liker_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          liked_id: string
+          liker_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          liked_id?: string
+          liker_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
@@ -104,11 +155,13 @@ export type Database = {
           bio: string | null
           country: string | null
           created_at: string
+          font_color: string | null
           gender: string | null
           id: string
           is_online: boolean
           last_seen: string | null
           level: number
+          likes_count: number
           name_color: string | null
           status: string | null
           updated_at: string
@@ -121,11 +174,13 @@ export type Database = {
           bio?: string | null
           country?: string | null
           created_at?: string
+          font_color?: string | null
           gender?: string | null
           id?: string
           is_online?: boolean
           last_seen?: string | null
           level?: number
+          likes_count?: number
           name_color?: string | null
           status?: string | null
           updated_at?: string
@@ -138,11 +193,13 @@ export type Database = {
           bio?: string | null
           country?: string | null
           created_at?: string
+          font_color?: string | null
           gender?: string | null
           id?: string
           is_online?: boolean
           last_seen?: string | null
           level?: number
+          likes_count?: number
           name_color?: string | null
           status?: string | null
           updated_at?: string

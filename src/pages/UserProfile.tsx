@@ -1,9 +1,8 @@
-import { ArrowRight, MessageSquare, Ban, Flag } from "lucide-react";
+import { ArrowRight, MessageSquare, Ban, Flag, Heart } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Tables } from "@/integrations/supabase/types";
 import FriendRequestButton from "@/components/FriendRequestButton";
 import ImagePreviewModal from "@/components/ImagePreviewModal";
 import { toast } from "@/hooks/use-toast";
@@ -14,13 +13,35 @@ const UserProfile = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [showImage, setShowImage] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
 
   useEffect(() => {
     if (!userId) return;
     supabase.from("profiles").select("*").eq("user_id", userId).single().then(({ data }) => {
       setProfile(data);
+      setLikesCount((data as any)?.likes_count || 0);
     });
-  }, [userId]);
+
+    if (user) {
+      supabase.from("likes" as any).select("id").eq("liker_id", user.id).eq("liked_id", userId).maybeSingle().then(({ data }) => {
+        setLiked(!!data);
+      });
+    }
+  }, [userId, user]);
+
+  const handleLike = async () => {
+    if (!user || !userId || userId === user.id) return;
+    if (liked) {
+      await supabase.from("likes" as any).delete().eq("liker_id", user.id).eq("liked_id", userId);
+      setLiked(false);
+      setLikesCount(prev => Math.max(0, prev - 1));
+    } else {
+      await supabase.from("likes" as any).insert({ liker_id: user.id, liked_id: userId });
+      setLiked(true);
+      setLikesCount(prev => prev + 1);
+    }
+  };
 
   const handleBlock = async () => {
     if (!user || !userId) return;
@@ -67,7 +88,6 @@ const UserProfile = () => {
           {profile.username}
         </h2>
         
-        {/* Online status */}
         <p className={`text-xs font-cairo mt-1 ${profile.is_online ? "text-accent" : "text-muted-foreground"}`}>
           {formatLastSeen()}
         </p>
@@ -84,18 +104,28 @@ const UserProfile = () => {
           )}
         </div>
 
-        {/* Status */}
+        {/* Like button */}
+        {user && userId !== user.id && (
+          <button
+            onClick={handleLike}
+            className={`mt-3 inline-flex items-center gap-2 px-5 py-2 rounded-full font-cairo font-bold text-sm transition-all ${
+              liked ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            }`}
+          >
+            <Heart className={`w-5 h-5 ${liked ? "fill-destructive" : ""}`} />
+            <span>{likesCount}</span>
+            <span>{liked ? "معجب" : "إعجاب"}</span>
+          </button>
+        )}
+
         {profile.status && (
           <p className="text-xs font-cairo text-muted-foreground mt-2 bg-muted inline-block px-3 py-1 rounded-full">
             💭 {profile.status}
           </p>
         )}
 
-        {/* Country */}
         {profile.country && (
-          <p className="text-xs font-cairo text-muted-foreground mt-2">
-            📍 {profile.country}
-          </p>
+          <p className="text-xs font-cairo text-muted-foreground mt-2">📍 {profile.country}</p>
         )}
 
         {profile.bio && (

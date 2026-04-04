@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import GuestRegister from "./pages/GuestRegister";
@@ -30,6 +31,11 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const NotificationListener = () => {
+  useNotificationSound();
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -37,6 +43,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <NotificationListener />
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />

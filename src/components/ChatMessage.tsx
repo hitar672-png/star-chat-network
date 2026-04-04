@@ -11,6 +11,7 @@ interface MessageData {
   gender?: string;
   avatarUrl?: string | null;
   nameColor?: string | null;
+  fontColor?: string | null;
   isGuest?: boolean;
 }
 
@@ -55,7 +56,6 @@ const ChatMessage = ({ message, onAvatarClick }: Props) => {
             >
               {message.username}
             </span>
-            {/* Guest/Member badge */}
             <span className={`text-[9px] font-cairo font-bold px-1.5 py-0.5 rounded-full ${
               message.isGuest
                 ? "bg-muted text-muted-foreground"
@@ -70,7 +70,10 @@ const ChatMessage = ({ message, onAvatarClick }: Props) => {
               </span>
             )}
           </div>
-          <p className={`text-sm font-cairo leading-relaxed ${message.isOwn ? "text-chat-user" : "text-chat-other"}`}>
+          <p
+            className="text-sm font-cairo leading-relaxed"
+            style={{ color: message.fontColor || undefined }}
+          >
             {message.text}
           </p>
         </div>
