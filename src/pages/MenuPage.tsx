@@ -2,11 +2,11 @@ import { ArrowRight, FileText, Shield, Lock, Trash2, Globe } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 
 const menuItems = [
-  { icon: FileText, label: "أخبار الشات" },
-  { icon: Shield, label: "الاعتداء CSAE" },
-  { icon: Globe, label: "محتوى المستخدم UGC" },
-  { icon: Lock, label: "الخصوصية Privacy Policy" },
-  { icon: Trash2, label: "حذف العضوية Delete User", danger: true },
+  { icon: FileText, label: "أخبار الشات", route: null },
+  { icon: Shield, label: "لوحة الإدارة", route: "/admin" },
+  { icon: Globe, label: "محتوى المستخدم UGC", route: null },
+  { icon: Lock, label: "الخصوصية Privacy Policy", route: null },
+  { icon: Trash2, label: "حذف العضوية Delete User", danger: true, route: null },
 ];
 
 const MenuPage = () => {

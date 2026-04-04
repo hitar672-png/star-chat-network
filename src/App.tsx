@@ -68,6 +68,7 @@ const App = () => (
             <Route path="/upgrade" element={<UpgradeAccount />} />
             <Route path="/friends" element={<Friends />} />
             <Route path="/rooms-list" element={<RoomsList />} />
+            <Route path="/admin" element={<AdminPanel />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
