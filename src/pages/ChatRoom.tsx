@@ -106,6 +106,7 @@ const ChatRoom = () => {
                 gender: msg.profile?.gender || undefined,
                 avatarUrl: msg.profile?.avatar_url || null,
                 nameColor: (msg.profile as any)?.name_color || null,
+                fontColor: (msg.profile as any)?.font_color || null,
                 isGuest: msg.profile?.username?.startsWith("زائر_") || false,
               }}
               onAvatarClick={() => handleAvatarClick(msg.profile)}
