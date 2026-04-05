@@ -37,18 +37,28 @@ const FONT_COLORS = [
   { label: "بنفسجي", value: "#a855f7" },
 ];
 
+const FONT_STYLES = [
+  { label: "عادي", value: "", family: "Cairo, sans-serif" },
+  { label: "كلاسيكي", value: "serif", family: "Georgia, 'Times New Roman', serif" },
+  { label: "تقني", value: "mono", family: "'Courier New', Consolas, monospace" },
+  { label: "مزخرف", value: "cursive", family: "'Segoe Script', cursive" },
+  { label: "حديث", value: "sans", family: "system-ui, -apple-system, sans-serif" },
+];
+
 const FontSettings = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [selectedSize, setSelectedSize] = useState(() => localStorage.getItem("chat_font_size") || "medium");
   const [selectedNameColor, setSelectedNameColor] = useState("");
   const [selectedFontColor, setSelectedFontColor] = useState("");
+  const [selectedFontStyle, setSelectedFontStyle] = useState("");
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("name_color, font_color").eq("user_id", user.id).single().then(({ data }) => {
+    supabase.from("profiles").select("name_color, font_color, font_style").eq("user_id", user.id).single().then(({ data }) => {
       if ((data as any)?.name_color) setSelectedNameColor((data as any).name_color);
       if ((data as any)?.font_color) setSelectedFontColor((data as any).font_color);
+      if ((data as any)?.font_style) setSelectedFontStyle((data as any).font_style);
     });
   }, [user]);
 
@@ -58,11 +68,14 @@ const FontSettings = () => {
       await supabase.from("profiles").update({
         name_color: selectedNameColor || null,
         font_color: selectedFontColor || null,
+        font_style: selectedFontStyle || null,
       } as any).eq("user_id", user.id);
     }
     toast({ title: "تم الحفظ", description: "تم حفظ إعدادات الخط بنجاح" });
     navigate(-1);
   };
+
+  const currentFontFamily = FONT_STYLES.find(f => f.value === selectedFontStyle)?.family || "Cairo, sans-serif";
 
   return (
     <div className="min-h-screen bg-background">
@@ -121,16 +134,34 @@ const FontSettings = () => {
           ))}
         </div>
 
+        <h2 className="text-sm font-cairo font-bold text-foreground mb-3 mt-6">شكل الخط</h2>
+        <div className="space-y-2">
+          {FONT_STYLES.map(fs => (
+            <button
+              key={fs.value}
+              onClick={() => setSelectedFontStyle(fs.value)}
+              className={`w-full flex items-center justify-between py-3 px-4 rounded-xl border transition-all ${
+                selectedFontStyle === fs.value ? "border-primary bg-primary/10" : "border-border bg-card"
+              }`}
+            >
+              <span className="text-sm text-foreground" style={{ fontFamily: fs.family }}>
+                {fs.label} - مرحباً بالعالم
+              </span>
+              {selectedFontStyle === fs.value && <Check className="w-4 h-4 text-primary" />}
+            </button>
+          ))}
+        </div>
+
         <div className="mt-6 bg-card border border-border rounded-xl p-4">
           <p className="text-sm font-cairo text-muted-foreground mb-2">معاينة:</p>
-          <p className="font-cairo font-bold text-sm mb-1" style={{ color: selectedNameColor || "hsl(var(--foreground))" }}>
+          <p className="font-bold text-sm mb-1" style={{ color: selectedNameColor || "hsl(var(--foreground))", fontFamily: currentFontFamily }}>
             اسم المستخدم
           </p>
           <p
-            className={`font-cairo ${fontSizes.find(f => f.value === selectedSize)?.size}`}
-            style={{ color: selectedFontColor || "hsl(var(--foreground))" }}
+            className={`${fontSizes.find(f => f.value === selectedSize)?.size}`}
+            style={{ color: selectedFontColor || "hsl(var(--foreground))", fontFamily: currentFontFamily }}
           >
-            هذا نص تجريبي لمعاينة لون خط الرسائل 💬
+            هذا نص تجريبي لمعاينة لون وشكل خط الرسائل 💬
           </p>
         </div>
       </div>

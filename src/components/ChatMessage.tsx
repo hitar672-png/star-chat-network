@@ -1,5 +1,13 @@
 import { Reply, AlertCircle } from "lucide-react";
 
+const FONT_FAMILY_MAP: Record<string, string> = {
+  "": "Cairo, sans-serif",
+  "serif": "Georgia, 'Times New Roman', serif",
+  "mono": "'Courier New', Consolas, monospace",
+  "cursive": "'Segoe Script', cursive",
+  "sans": "system-ui, -apple-system, sans-serif",
+};
+
 interface MessageData {
   id: string;
   username: string;
@@ -12,6 +20,7 @@ interface MessageData {
   avatarUrl?: string | null;
   nameColor?: string | null;
   fontColor?: string | null;
+  fontStyle?: string | null;
   isGuest?: boolean;
 }
 
@@ -21,6 +30,8 @@ interface Props {
 }
 
 const ChatMessage = ({ message, onAvatarClick }: Props) => {
+  const fontFamily = FONT_FAMILY_MAP[message.fontStyle || ""] || "Cairo, sans-serif";
+
   return (
     <div
       className={`animate-slide-up border-b border-border/50 px-4 py-3 ${
@@ -49,9 +60,10 @@ const ChatMessage = ({ message, onAvatarClick }: Props) => {
               )}
             </button>
             <span
-              className="text-sm font-cairo font-bold"
+              className="text-sm font-bold"
               style={{
                 color: message.nameColor || (message.isOwn ? "hsl(var(--primary))" : message.gender === "female" ? "hsl(var(--primary))" : "hsl(var(--foreground))"),
+                fontFamily,
               }}
             >
               {message.username}
@@ -71,8 +83,11 @@ const ChatMessage = ({ message, onAvatarClick }: Props) => {
             )}
           </div>
           <p
-            className="text-sm font-cairo leading-relaxed"
-            style={{ color: message.fontColor || undefined }}
+            className="text-sm leading-relaxed"
+            style={{
+              color: message.fontColor || undefined,
+              fontFamily,
+            }}
           >
             {message.text}
           </p>

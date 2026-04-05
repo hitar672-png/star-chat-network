@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowRight, Shield, Users, Flag, Ban, CheckCircle, XCircle } from "lucide-react";
+import { ArrowRight, Shield, Users, Flag, CheckCircle, XCircle, UserPlus, UserMinus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,9 +21,11 @@ const AdminPanel = () => {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"reports" | "users">("reports");
+  const [tab, setTab] = useState<"reports" | "users" | "moderators">("reports");
   const [reports, setReports] = useState<Report[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [moderators, setModerators] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -33,6 +35,7 @@ const AdminPanel = () => {
       if (data) {
         fetchReports();
         fetchUsers();
+        fetchModerators();
       }
     });
   }, [user]);
@@ -40,12 +43,10 @@ const AdminPanel = () => {
   const fetchReports = async () => {
     const { data } = await supabase.from("reports" as any).select("*").order("created_at", { ascending: false });
     if (!data) return;
-
     const userIds = [...new Set((data as any[]).flatMap((r: any) => [r.reporter_id, r.reported_id]))];
     const { data: profiles } = await supabase.from("profiles").select("user_id, username").in("user_id", userIds);
     const nameMap: Record<string, string> = {};
     profiles?.forEach(p => { nameMap[p.user_id] = p.username; });
-
     setReports((data as any[]).map((r: any) => ({
       ...r,
       reporter_name: nameMap[r.reporter_id] || "مجهول",
@@ -58,10 +59,37 @@ const AdminPanel = () => {
     if (data) setUsers(data);
   };
 
+  const fetchModerators = async () => {
+    const { data: roles } = await supabase.from("user_roles").select("*");
+    if (!roles || roles.length === 0) { setModerators([]); return; }
+    const userIds = roles.map(r => r.user_id);
+    const { data: profiles } = await supabase.from("profiles").select("*").in("user_id", userIds);
+    const profileMap: Record<string, any> = {};
+    profiles?.forEach(p => { profileMap[p.user_id] = p; });
+    setModerators(roles.map(r => ({ ...r, profile: profileMap[r.user_id] })));
+  };
+
   const updateReportStatus = async (id: string, status: string) => {
     await supabase.from("reports" as any).update({ status }).eq("id", id);
-    toast.success(`تم تحديث حالة البلاغ إلى: ${status === "resolved" ? "تم المعالجة" : "مرفوض"}`);
+    toast.success(`تم تحديث حالة البلاغ`);
     fetchReports();
+  };
+
+  const addModerator = async (userId: string) => {
+    const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: "moderator" as any });
+    if (error) {
+      toast.error("هذا المستخدم مشرف بالفعل أو حدث خطأ");
+      return;
+    }
+    toast.success("تم تعيين المشرف بنجاح");
+    setSelectedUserId(null);
+    fetchModerators();
+  };
+
+  const removeModerator = async (roleId: string) => {
+    await supabase.from("user_roles").delete().eq("id", roleId);
+    toast.success("تم إزالة المشرف");
+    fetchModerators();
   };
 
   if (loading) {
@@ -77,10 +105,7 @@ const AdminPanel = () => {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <Shield className="w-16 h-16 text-destructive" />
         <p className="text-lg font-cairo font-bold text-foreground">ليس لديك صلاحية الوصول</p>
-        <p className="text-sm font-cairo text-muted-foreground">هذه الصفحة مخصصة للمشرفين فقط</p>
-        <button onClick={() => navigate(-1)} className="mt-4 px-6 py-2 bg-primary text-primary-foreground font-cairo font-bold rounded-xl">
-          رجوع
-        </button>
+        <button onClick={() => navigate(-1)} className="mt-4 px-6 py-2 bg-primary text-primary-foreground font-cairo font-bold rounded-xl">رجوع</button>
       </div>
     );
   }
@@ -89,7 +114,7 @@ const AdminPanel = () => {
   const resolvedReports = reports.filter(r => r.status !== "pending");
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-8">
       <div className="sticky top-0 z-50 bg-toolbar px-4 py-3 flex items-center justify-between">
         <button onClick={() => navigate(-1)} className="text-secondary-foreground">
           <ArrowRight className="w-6 h-6" />
@@ -100,7 +125,6 @@ const AdminPanel = () => {
         <div className="w-6" />
       </div>
 
-      {/* Stats */}
       <div className="px-4 py-4 grid grid-cols-3 gap-3">
         <div className="bg-card border border-border rounded-xl p-3 text-center">
           <Flag className="w-5 h-5 text-destructive mx-auto mb-1" />
@@ -119,16 +143,13 @@ const AdminPanel = () => {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex border-b border-border">
-        <button onClick={() => setTab("reports")}
-          className={`flex-1 py-3 text-sm font-cairo font-bold text-center ${tab === "reports" ? "text-primary border-b-2 border-primary" : "text-muted-foreground"}`}>
-          البلاغات ({reports.length})
-        </button>
-        <button onClick={() => setTab("users")}
-          className={`flex-1 py-3 text-sm font-cairo font-bold text-center ${tab === "users" ? "text-primary border-b-2 border-primary" : "text-muted-foreground"}`}>
-          المستخدمين ({users.length})
-        </button>
+        {(["reports", "users", "moderators"] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`flex-1 py-3 text-sm font-cairo font-bold text-center ${tab === t ? "text-primary border-b-2 border-primary" : "text-muted-foreground"}`}>
+            {t === "reports" ? `البلاغات (${reports.length})` : t === "users" ? `المستخدمين (${users.length})` : `المشرفين (${moderators.length})`}
+          </button>
+        ))}
       </div>
 
       <div className="px-4 py-4">
@@ -160,9 +181,7 @@ const AdminPanel = () => {
                     <span className="text-muted-foreground">المُبلّغ عنه:</span> {r.reported_name}
                   </p>
                   {r.reason && (
-                    <p className="text-xs font-cairo text-muted-foreground bg-muted rounded-lg px-3 py-2 mt-2">
-                      {r.reason}
-                    </p>
+                    <p className="text-xs font-cairo text-muted-foreground bg-muted rounded-lg px-3 py-2 mt-2">{r.reason}</p>
                   )}
                   {r.status === "pending" && (
                     <div className="flex gap-2 mt-3">
@@ -184,26 +203,55 @@ const AdminPanel = () => {
               ))}
             </div>
           )
-        ) : (
+        ) : tab === "users" ? (
           <div className="space-y-2">
             {users.map(u => (
-              <button
-                key={u.id}
-                onClick={() => navigate(`/user/${u.user_id}`)}
-                className="w-full flex items-center gap-3 bg-card border border-border rounded-xl p-3 hover:border-primary/30 transition-all"
-              >
-                <div className="w-10 h-10 rounded-full bg-muted border-2 border-accent flex items-center justify-center overflow-hidden flex-shrink-0">
+              <div key={u.id} className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
+                <button onClick={() => navigate(`/user/${u.user_id}`)}
+                  className="w-10 h-10 rounded-full bg-muted border-2 border-accent flex items-center justify-center overflow-hidden flex-shrink-0">
                   {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : <span>👤</span>}
-                </div>
+                </button>
                 <div className="flex-1 text-right min-w-0">
                   <p className="text-sm font-cairo font-bold text-foreground">{u.username}</p>
                   <p className="text-[10px] font-cairo text-muted-foreground">
                     مستوى {u.level} • {u.is_online ? "🟢 متصل" : "⚪ غير متصل"}
                   </p>
                 </div>
-                <span className="text-xs font-cairo text-muted-foreground">{u.country || ""}</span>
-              </button>
+                <button onClick={() => addModerator(u.user_id)}
+                  className="flex items-center gap-1 bg-primary/10 text-primary text-xs font-cairo font-bold px-3 py-1.5 rounded-lg">
+                  <UserPlus className="w-3 h-3" /> مشرف
+                </button>
+              </div>
             ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {moderators.length === 0 ? (
+              <div className="text-center py-16">
+                <Shield className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm font-cairo text-muted-foreground">لا يوجد مشرفين</p>
+              </div>
+            ) : (
+              moderators.map(m => (
+                <div key={m.id} className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
+                  <div className="w-10 h-10 rounded-full bg-muted border-2 border-primary flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {m.profile?.avatar_url ? <img src={m.profile.avatar_url} alt="" className="w-full h-full object-cover" /> : <span>👤</span>}
+                  </div>
+                  <div className="flex-1 text-right min-w-0">
+                    <p className="text-sm font-cairo font-bold text-foreground">{m.profile?.username || "مجهول"}</p>
+                    <p className="text-[10px] font-cairo text-muted-foreground">
+                      الدور: <span className="text-primary font-bold">{m.role === "admin" ? "مدير" : "مشرف"}</span>
+                    </p>
+                  </div>
+                  {m.role !== "admin" && (
+                    <button onClick={() => removeModerator(m.id)}
+                      className="flex items-center gap-1 bg-destructive/10 text-destructive text-xs font-cairo font-bold px-3 py-1.5 rounded-lg">
+                      <UserMinus className="w-3 h-3" /> إزالة
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
