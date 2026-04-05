@@ -177,6 +177,7 @@ export type Database = {
           country: string | null
           created_at: string
           font_color: string | null
+          font_style: string | null
           gender: string | null
           id: string
           is_online: boolean
@@ -196,6 +197,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           font_color?: string | null
+          font_style?: string | null
           gender?: string | null
           id?: string
           is_online?: boolean
@@ -215,6 +217,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           font_color?: string | null
+          font_style?: string | null
           gender?: string | null
           id?: string
           is_online?: boolean

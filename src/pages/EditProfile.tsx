@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Camera, Check } from "lucide-react";
+import { ArrowRight, Camera, Check, Trash2, Image } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -53,9 +53,9 @@ const EditProfile = () => {
   const [nameColor, setNameColor] = useState((profile as any)?.name_color || "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarDeleted, setAvatarDeleted] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Auto-detect country on first load if not set
   useEffect(() => {
     if (!country) {
       fetch("https://ipapi.co/json/")
@@ -84,13 +84,21 @@ const EditProfile = () => {
     }
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
+    setAvatarDeleted(false);
+  };
+
+  const handleDeleteAvatar = () => {
+    setAvatarPreview(null);
+    setAvatarFile(null);
+    setAvatarDeleted(true);
   };
 
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
     try {
-      let avatarUrl = profile?.avatar_url || null;
+      let avatarUrl = avatarDeleted ? null : (profile?.avatar_url || null);
+
       if (avatarFile) {
         const ext = avatarFile.name.split(".").pop();
         const path = `${user.id}/avatar.${ext}`;
@@ -98,6 +106,13 @@ const EditProfile = () => {
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
         avatarUrl = urlData.publicUrl;
+      }
+
+      if (avatarDeleted && profile?.avatar_url) {
+        const oldPath = profile.avatar_url.split("/avatars/")[1];
+        if (oldPath) {
+          await supabase.storage.from("avatars").remove([oldPath]);
+        }
       }
 
       const { error } = await supabase
@@ -136,8 +151,8 @@ const EditProfile = () => {
         </button>
       </div>
 
-      <div className="flex justify-center py-8">
-        <button onClick={() => fileInputRef.current?.click()} className="relative">
+      <div className="flex flex-col items-center py-8 gap-3">
+        <div className="relative">
           <div className="w-28 h-28 rounded-full bg-muted border-4 border-primary flex items-center justify-center overflow-hidden">
             {avatarPreview ? (
               <img src={avatarPreview} alt="avatar" className="w-full h-full object-cover" />
@@ -145,10 +160,25 @@ const EditProfile = () => {
               <span className="text-5xl">👤</span>
             )}
           </div>
-          <div className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2">
-            <Camera className="w-4 h-4" />
-          </div>
-        </button>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-cairo font-bold px-4 py-2 rounded-lg"
+          >
+            <Image className="w-4 h-4" />
+            {avatarPreview ? "تغيير الصورة" : "إضافة صورة"}
+          </button>
+          {avatarPreview && (
+            <button
+              onClick={handleDeleteAvatar}
+              className="flex items-center gap-1.5 bg-destructive text-destructive-foreground text-xs font-cairo font-bold px-4 py-2 rounded-lg"
+            >
+              <Trash2 className="w-4 h-4" />
+              حذف الصورة
+            </button>
+          )}
+        </div>
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
       </div>
 

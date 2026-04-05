@@ -107,6 +107,7 @@ const ChatRoom = () => {
                 avatarUrl: msg.profile?.avatar_url || null,
                 nameColor: (msg.profile as any)?.name_color || null,
                 fontColor: (msg.profile as any)?.font_color || null,
+                fontStyle: (msg.profile as any)?.font_style || null,
                 isGuest: msg.profile?.username?.startsWith("زائر_") || false,
               }}
               onAvatarClick={() => handleAvatarClick(msg.profile)}
