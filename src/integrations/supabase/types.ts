@@ -114,6 +114,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          reply_to_text: string | null
+          reply_to_username: string | null
           room_id: string
           text: string
           user_id: string
@@ -121,6 +123,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          reply_to_text?: string | null
+          reply_to_username?: string | null
           room_id: string
           text: string
           user_id: string
@@ -128,6 +132,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          reply_to_text?: string | null
+          reply_to_username?: string | null
           room_id?: string
           text?: string
           user_id?: string
@@ -146,6 +152,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          image_url: string | null
+          is_image_viewed: boolean | null
           is_read: boolean
           receiver_id: string
           sender_id: string
@@ -154,6 +162,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          image_url?: string | null
+          is_image_viewed?: boolean | null
           is_read?: boolean
           receiver_id: string
           sender_id: string
@@ -162,6 +172,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          image_url?: string | null
+          is_image_viewed?: boolean | null
           is_read?: boolean
           receiver_id?: string
           sender_id?: string

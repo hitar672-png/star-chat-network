@@ -22,14 +22,17 @@ interface MessageData {
   fontColor?: string | null;
   fontStyle?: string | null;
   isGuest?: boolean;
+  replyToUsername?: string | null;
+  replyToText?: string | null;
 }
 
 interface Props {
   message: MessageData;
   onAvatarClick?: () => void;
+  onUsernameClick?: () => void;
 }
 
-const ChatMessage = ({ message, onAvatarClick }: Props) => {
+const ChatMessage = ({ message, onAvatarClick, onUsernameClick }: Props) => {
   const fontFamily = FONT_FAMILY_MAP[message.fontStyle || ""] || "Cairo, sans-serif";
 
   return (
@@ -41,7 +44,7 @@ const ChatMessage = ({ message, onAvatarClick }: Props) => {
       <div className="flex items-start gap-3">
         {!message.isOwn && (
           <div className="flex flex-col gap-1 mt-1 opacity-40 hover:opacity-100 transition-opacity">
-            <button className="text-muted-foreground hover:text-foreground">
+            <button onClick={onUsernameClick} className="text-muted-foreground hover:text-foreground" title="رد">
               <Reply className="w-4 h-4" />
             </button>
             <button className="text-muted-foreground hover:text-foreground">
@@ -51,6 +54,14 @@ const ChatMessage = ({ message, onAvatarClick }: Props) => {
         )}
 
         <div className="flex-1">
+          {/* Reply quote */}
+          {message.replyToUsername && (
+            <div className="bg-muted/50 border-r-2 border-primary rounded px-3 py-1.5 mb-2 text-xs">
+              <span className="font-bold text-primary">{message.replyToUsername}</span>
+              <p className="text-muted-foreground truncate mt-0.5">{message.replyToText}</p>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 mb-1">
             <button onClick={onAvatarClick} className="w-7 h-7 rounded-full bg-muted border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
               {message.avatarUrl ? (
@@ -59,15 +70,16 @@ const ChatMessage = ({ message, onAvatarClick }: Props) => {
                 <span className="text-xs">👤</span>
               )}
             </button>
-            <span
-              className="text-sm font-bold"
+            <button
+              onClick={onUsernameClick}
+              className="text-sm font-bold hover:underline"
               style={{
                 color: message.nameColor || (message.isOwn ? "hsl(var(--primary))" : message.gender === "female" ? "hsl(var(--primary))" : "hsl(var(--foreground))"),
                 fontFamily,
               }}
             >
               {message.username}
-            </span>
+            </button>
             <span className={`text-[9px] font-cairo font-bold px-1.5 py-0.5 rounded-full ${
               message.isGuest
                 ? "bg-muted text-muted-foreground"
