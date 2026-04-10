@@ -1,14 +1,21 @@
-import { Send } from "lucide-react";
+import { Send, X } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import EmojiPicker from "./EmojiPicker";
 
-interface Props {
-  onSend: (text: string) => void;
+interface ReplyTo {
+  username: string;
+  text: string;
 }
 
-const ChatInput = ({ onSend }: Props) => {
+interface Props {
+  onSend: (text: string, replyTo?: ReplyTo) => void;
+  replyTo?: ReplyTo | null;
+  onCancelReply?: () => void;
+}
+
+const ChatInput = ({ onSend, replyTo, onCancelReply }: Props) => {
   const [text, setText] = useState("");
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -17,8 +24,9 @@ const ChatInput = ({ onSend }: Props) => {
 
   const handleSend = () => {
     if (text.trim()) {
-      onSend(text.trim());
+      onSend(text.trim(), replyTo || undefined);
       setText("");
+      onCancelReply?.();
     }
   };
 
@@ -31,6 +39,18 @@ const ChatInput = ({ onSend }: Props) => {
         >
           💚 أكمل الاشتراك بالضغط هنا
         </button>
+      )}
+
+      {replyTo && (
+        <div className="flex items-center gap-2 bg-muted/50 border-r-2 border-primary rounded px-3 py-1.5 mb-2">
+          <div className="flex-1 min-w-0">
+            <span className="text-xs font-bold text-primary">رد على {replyTo.username}</span>
+            <p className="text-xs text-muted-foreground truncate">{replyTo.text}</p>
+          </div>
+          <button onClick={onCancelReply} className="text-muted-foreground hover:text-foreground flex-shrink-0">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       )}
       
       <div className="flex items-center gap-2">
