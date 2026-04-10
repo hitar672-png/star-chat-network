@@ -1,4 +1,5 @@
 import { Reply, AlertCircle } from "lucide-react";
+import VoicePlayer from "./VoicePlayer";
 
 const FONT_FAMILY_MAP: Record<string, string> = {
   "": "Cairo, sans-serif",
@@ -24,6 +25,7 @@ interface MessageData {
   isGuest?: boolean;
   replyToUsername?: string | null;
   replyToText?: string | null;
+  voiceUrl?: string | null;
 }
 
 interface Props {
@@ -54,7 +56,6 @@ const ChatMessage = ({ message, onAvatarClick, onUsernameClick }: Props) => {
         )}
 
         <div className="flex-1">
-          {/* Reply quote */}
           {message.replyToUsername && (
             <div className="bg-muted/50 border-r-2 border-primary rounded px-3 py-1.5 mb-2 text-xs">
               <span className="font-bold text-primary">{message.replyToUsername}</span>
@@ -94,15 +95,20 @@ const ChatMessage = ({ message, onAvatarClick, onUsernameClick }: Props) => {
               </span>
             )}
           </div>
-          <p
-            className="text-sm leading-relaxed"
-            style={{
-              color: message.fontColor || undefined,
-              fontFamily,
-            }}
-          >
-            {message.text}
-          </p>
+
+          {message.voiceUrl ? (
+            <VoicePlayer voiceUrl={message.voiceUrl} />
+          ) : (
+            <p
+              className="text-sm leading-relaxed"
+              style={{
+                color: message.fontColor || undefined,
+                fontFamily,
+              }}
+            >
+              {message.text}
+            </p>
+          )}
         </div>
 
         <button onClick={onAvatarClick} className="flex flex-col items-center gap-1">
