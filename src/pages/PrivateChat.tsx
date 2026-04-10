@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowRight, Send } from "lucide-react";
+import { ArrowRight, Send, Image, X, Eye } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +12,8 @@ interface PrivateMsg {
   receiver_id: string;
   created_at: string;
   is_read: boolean;
+  image_url?: string | null;
+  is_image_viewed?: boolean;
 }
 
 interface PartnerProfile {
@@ -30,7 +32,10 @@ const PrivateChat = () => {
   const [messages, setMessages] = useState<PrivateMsg[]>([]);
   const [text, setText] = useState("");
   const [partner, setPartner] = useState<PartnerProfile | null>(null);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [sendingImage, setSendingImage] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!userId || !user) return;
@@ -45,7 +50,7 @@ const PrivateChat = () => {
         .select("*")
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${user.id})`)
         .order("created_at", { ascending: true });
-      if (data) setMessages(data);
+      if (data) setMessages(data as PrivateMsg[]);
 
       await supabase
         .from("private_messages")
@@ -60,18 +65,25 @@ const PrivateChat = () => {
       .channel(`private-${user.id}-${userId}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "private_messages" },
+        { event: "*", schema: "public", table: "private_messages" },
         (payload) => {
-          const msg = payload.new as PrivateMsg;
-          if (
-            (msg.sender_id === user.id && msg.receiver_id === userId) ||
-            (msg.sender_id === userId && msg.receiver_id === user.id)
-          ) {
-            setMessages((prev) => [...prev, msg]);
-            // Mark as read instantly
-            if (msg.sender_id === userId) {
-              supabase.from("private_messages").update({ is_read: true }).eq("id", msg.id);
+          if (payload.eventType === "INSERT") {
+            const msg = payload.new as PrivateMsg;
+            if (
+              (msg.sender_id === user.id && msg.receiver_id === userId) ||
+              (msg.sender_id === userId && msg.receiver_id === user.id)
+            ) {
+              setMessages((prev) => [...prev, msg]);
+              if (msg.sender_id === userId) {
+                supabase.from("private_messages").update({ is_read: true }).eq("id", msg.id);
+              }
             }
+          } else if (payload.eventType === "UPDATE") {
+            const updated = payload.new as PrivateMsg;
+            setMessages(prev => prev.map(m => m.id === updated.id ? updated : m));
+          } else if (payload.eventType === "DELETE") {
+            const old = payload.old as any;
+            setMessages(prev => prev.filter(m => m.id !== old.id));
           }
         }
       )
@@ -92,6 +104,57 @@ const PrivateChat = () => {
       text: text.trim(),
     });
     setText("");
+  };
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user || !userId) return;
+    setSendingImage(true);
+
+    const ext = file.name.split('.').pop();
+    const path = `private/${user.id}/${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file);
+    if (uploadError) {
+      setSendingImage(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+
+    await supabase.from("private_messages").insert({
+      sender_id: user.id,
+      receiver_id: userId,
+      text: "📷 صورة",
+      image_url: urlData.publicUrl,
+    });
+
+    setSendingImage(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleViewImage = async (msg: PrivateMsg) => {
+    if (!msg.image_url) return;
+    setViewingImage(msg.image_url);
+
+    // If I'm the receiver and haven't viewed yet, mark as viewed then delete after close
+    if (msg.receiver_id === user?.id && !msg.is_image_viewed) {
+      await supabase.from("private_messages").update({ is_image_viewed: true } as any).eq("id", msg.id);
+    }
+  };
+
+  const handleCloseImage = async () => {
+    // Find the message for this image and delete if it was viewed
+    const msg = messages.find(m => m.image_url === viewingImage);
+    if (msg && msg.is_image_viewed) {
+      // Delete from storage
+      const urlParts = msg.image_url?.split("/avatars/");
+      if (urlParts && urlParts[1]) {
+        await supabase.storage.from("avatars").remove([decodeURIComponent(urlParts[1])]);
+      }
+      await supabase.from("private_messages").delete().eq("id", msg.id);
+    }
+    setViewingImage(null);
   };
 
   const formatLastSeen = (lastSeen: string | null, isOnline: boolean) => {
@@ -122,7 +185,6 @@ const PrivateChat = () => {
         </div>
       </div>
 
-      {/* Partner info bar */}
       {partner && (
         <div className="bg-card/50 border-b border-border px-4 py-2 flex items-center justify-center gap-4 text-[11px] font-cairo text-muted-foreground">
           {partner.status && <span>💭 {partner.status}</span>}
@@ -143,7 +205,19 @@ const PrivateChat = () => {
                   : "bg-card border border-border text-foreground"
               }`}
             >
-              <p className="text-sm font-cairo">{msg.text}</p>
+              {msg.image_url && !msg.is_image_viewed ? (
+                <button
+                  onClick={() => handleViewImage(msg)}
+                  className="flex items-center gap-2 bg-primary/10 rounded-xl px-4 py-3 text-primary hover:bg-primary/20 transition-colors"
+                >
+                  <Eye className="w-5 h-5" />
+                  <span className="text-sm font-cairo font-bold">📷 اضغط لعرض الصورة</span>
+                </button>
+              ) : msg.image_url && msg.is_image_viewed ? (
+                <p className="text-xs font-cairo text-muted-foreground italic">🚫 تم فتح الصورة وحذفها</p>
+              ) : (
+                <p className="text-sm font-cairo">{msg.text}</p>
+              )}
               <span className="text-[10px] font-space text-muted-foreground block mt-1">
                 {new Date(msg.created_at).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}
               </span>
@@ -151,6 +225,22 @@ const PrivateChat = () => {
           </div>
         ))}
       </div>
+
+      {/* Image viewer overlay */}
+      {viewingImage && (
+        <div className="fixed inset-0 bg-background/95 backdrop-blur-md z-[200] flex flex-col items-center justify-center" onClick={handleCloseImage}>
+          <p className="text-xs font-cairo text-destructive mb-4 animate-pulse">⚠️ الصورة ستختفي بعد إغلاقها</p>
+          <img
+            src={viewingImage}
+            alt=""
+            className="max-w-[90vw] max-h-[70vh] rounded-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button onClick={handleCloseImage} className="mt-4 bg-card border border-border rounded-full px-6 py-2 text-sm font-cairo text-foreground">
+            إغلاق وحذف الصورة
+          </button>
+        </div>
+      )}
 
       <div className="border-t border-border px-3 py-2 flex items-center gap-2">
         <button
@@ -169,6 +259,20 @@ const PrivateChat = () => {
           dir="rtl"
         />
         <EmojiPicker onSelect={(emoji) => setText(prev => prev + emoji)} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageSelect}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={sendingImage}
+          className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 disabled:opacity-50"
+        >
+          <Image className="w-5 h-5" />
+        </button>
       </div>
     </div>
   );
