@@ -144,7 +144,6 @@ const ChatRoom = () => {
 
       <ChatInput
         onSend={handleSend}
-        onVoiceSend={handleVoiceSend}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
       />
