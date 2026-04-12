@@ -18,6 +18,9 @@ interface MessageWithProfile {
   created_at: string;
   user_id: string;
   room_id: string;
+  reply_to_username?: string | null;
+  reply_to_text?: string | null;
+  voice_url?: string | null;
   profile?: Tables<"profiles"> | null;
 }
 
@@ -26,6 +29,7 @@ const Rooms = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<MessageWithProfile[]>([]);
   const [selectedUser, setSelectedUser] = useState<Tables<"profiles"> | null>(null);
+  const [replyTo, setReplyTo] = useState<{ username: string; text: string } | null>(null);
   const profilesCacheRef = useRef<Record<string, Tables<"profiles">>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -38,7 +42,6 @@ const Rooms = () => {
 
   useEffect(() => {
     const fetchMessages = async () => {
-      // Clean old messages first
       await supabase.rpc("cleanup_old_messages" as any);
       
       const { data } = await supabase.from("messages").select("*").eq("room_id", PUBLIC_ROOM_ID)
@@ -57,7 +60,7 @@ const Rooms = () => {
       .channel(`room-public`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `room_id=eq.${PUBLIC_ROOM_ID}` },
         async (payload) => {
-          const msg = payload.new as Tables<"messages">;
+          const msg = payload.new as any;
           const profile = await fetchProfile(msg.user_id);
           setMessages(prev => [...prev, { ...msg, profile }]);
         }
@@ -70,13 +73,23 @@ const Rooms = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const handleSend = async (text: string) => {
+  const handleSend = async (text: string, reply?: { username: string; text: string }) => {
     if (!user) return;
-    await supabase.from("messages").insert({ room_id: PUBLIC_ROOM_ID, user_id: user.id, text });
+    const insertData: any = { room_id: PUBLIC_ROOM_ID, user_id: user.id, text };
+    if (reply) {
+      insertData.reply_to_username = reply.username;
+      insertData.reply_to_text = reply.text;
+    }
+    await supabase.from("messages").insert(insertData);
   };
 
   const handleAvatarClick = (profile: Tables<"profiles"> | null | undefined) => {
     if (profile && profile.user_id !== user?.id) setSelectedUser(profile);
+  };
+
+  const handleReply = (msg: MessageWithProfile) => {
+    const username = msg.profile?.username || "مجهول";
+    setReplyTo({ username, text: msg.text });
   };
 
   return (
@@ -99,14 +112,24 @@ const Rooms = () => {
                 gender: msg.profile?.gender || undefined,
                 avatarUrl: msg.profile?.avatar_url || null,
                 nameColor: (msg.profile as any)?.name_color || null,
+                fontColor: (msg.profile as any)?.font_color || null,
+                fontStyle: (msg.profile as any)?.font_style || null,
                 isGuest: msg.profile?.username?.startsWith("زائر_") || false,
+                replyToUsername: msg.reply_to_username || null,
+                replyToText: msg.reply_to_text || null,
+                voiceUrl: msg.voice_url || null,
               }}
               onAvatarClick={() => handleAvatarClick(msg.profile)}
+              onUsernameClick={() => handleReply(msg)}
             />
           ))}
         </div>
       </div>
-      <ChatInput onSend={handleSend} />
+      <ChatInput
+        onSend={handleSend}
+        replyTo={replyTo}
+        onCancelReply={() => setReplyTo(null)}
+      />
       <BottomNav />
       {selectedUser && <UserProfileModal profile={selectedUser} onClose={() => setSelectedUser(null)} />}
     </div>
