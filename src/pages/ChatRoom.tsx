@@ -9,6 +9,7 @@ import UserProfileModal from "@/components/UserProfileModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tables } from "@/integrations/supabase/types";
+import { ArrowDown } from "lucide-react";
 
 interface MessageWithProfile {
   id: string;
@@ -30,8 +31,24 @@ const ChatRoom = () => {
   const [roomName, setRoomName] = useState("الغرفة العامة");
   const [selectedUser, setSelectedUser] = useState<Tables<"profiles"> | null>(null);
   const [replyTo, setReplyTo] = useState<{ username: string; text: string } | null>(null);
+  const [showScrollDown, setShowScrollDown] = useState(false);
   const profilesCacheRef = useRef<Record<string, Tables<"profiles">>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+
+  const scrollToBottom = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    const nearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    isNearBottomRef.current = nearBottom;
+    setShowScrollDown(!nearBottom);
+  }, []);
 
   const fetchProfile = useCallback(async (userId: string): Promise<Tables<"profiles"> | null> => {
     if (profilesCacheRef.current[userId]) return profilesCacheRef.current[userId];
@@ -75,7 +92,9 @@ const ChatRoom = () => {
   }, [roomId, fetchProfile]);
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (isNearBottomRef.current && scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }
   }, [messages]);
 
   const handleSend = async (text: string, reply?: { username: string; text: string }) => {
@@ -111,7 +130,7 @@ const ChatRoom = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <TopToolbar roomName={roomName} />
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide pb-36">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide pb-36 scroll-smooth">
         <WelcomeBanner />
         <div className="mt-2">
           {messages.map(msg => (
@@ -141,6 +160,15 @@ const ChatRoom = () => {
           ))}
         </div>
       </div>
+
+      {showScrollDown && (
+        <button
+          onClick={scrollToBottom}
+          className="fixed bottom-36 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground rounded-full p-2 shadow-lg animate-bounce"
+        >
+          <ArrowDown className="w-5 h-5" />
+        </button>
+      )}
 
       <ChatInput
         onSend={handleSend}
