@@ -272,6 +272,7 @@ const PrivateChat = () => {
         </button>
       )}
 
+      {viewingImage && (
         <div className="fixed inset-0 bg-background/95 backdrop-blur-md z-[200] flex flex-col items-center justify-center" onClick={handleCloseImage}>
           <p className="text-xs font-cairo text-destructive mb-4 animate-pulse">⚠️ الصورة ستختفي بعد إغلاقها</p>
           <img
