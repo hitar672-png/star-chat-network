@@ -263,7 +263,15 @@ const PrivateChat = () => {
         ))}
       </div>
 
-      {viewingImage && (
+      {showScrollDown && (
+        <button
+          onClick={scrollToBottom}
+          className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground rounded-full p-2 shadow-lg animate-bounce"
+        >
+          <ArrowDown className="w-5 h-5" />
+        </button>
+      )}
+
         <div className="fixed inset-0 bg-background/95 backdrop-blur-md z-[200] flex flex-col items-center justify-center" onClick={handleCloseImage}>
           <p className="text-xs font-cairo text-destructive mb-4 animate-pulse">⚠️ الصورة ستختفي بعد إغلاقها</p>
           <img
