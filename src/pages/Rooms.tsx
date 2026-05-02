@@ -154,6 +154,14 @@ const Rooms = () => {
 
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide pb-36 scroll-smooth">
         <WelcomeBanner />
+        <div className="flex justify-center py-2">
+          <button
+            onClick={addTestMessages}
+            className="bg-accent/80 text-accent-foreground text-xs font-cairo px-3 py-1 rounded-full"
+          >
+            🧪 إضافة 20 رسالة تجريبية
+          </button>
+        </div>
         <div className="mt-2">
           {messages.map(msg => (
             <ChatMessage key={msg.id}
